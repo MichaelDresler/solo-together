@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-const {Schema} = mongoose
-const {model} = mongoose
+const {Schema, model} = mongoose
 
 const UserSchema = new Schema({
     username:{
@@ -8,7 +7,7 @@ const UserSchema = new Schema({
         required:true,
         unique:true,
     },
-    password:{
+    hashedPassword:{
         type:String,
         required:true,
     }

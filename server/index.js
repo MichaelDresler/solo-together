@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import "dotenv/config";
+import authRoutes from "./routes/auth.js"
 
 const app = express();
 const PORT = 5001;
@@ -11,6 +12,7 @@ const clientOptions = {
 };
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
+app.use("/api/auth", authRoutes)
 
 async function connectDB() {
   try {
