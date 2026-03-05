@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("")
+  const [err, setErr] = useState("");
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,27 +28,26 @@ export default function Login() {
 
       const data = await res.json();
       if (!res.ok) {
-        setErr(data.error)
+        setErr(data.error);
         throw new Error(data.error);
-      }
-      else{
-              setLoading(true)
+      } else {
+        setLoading(true);
       }
       localStorage.setItem("token", data.token);
       console.log("logged in:", data.user);
 
+      login(data.token); // ✅ updates context + localStorage
+      navigate("/dashboard");
     } catch (err) {
       console.error(err.message);
     }
 
-      // setLoading(false);
+    // setLoading(false);
   };
 
   return (
     <div className="flex flex-col  max-w-xl mx-auto justify-center h-screen">
-      <div className="text-red-500">
-        {err}
-      </div>
+      <div className="text-red-500">{err}</div>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <input
           name="username"
