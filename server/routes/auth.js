@@ -2,6 +2,7 @@ import express from "express";
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import auth from "../middleware/auth.js";
 const router = express.Router();
 
 router.post("/register", async (req, res) => {
@@ -56,12 +57,24 @@ router.post("/login", async (req, res) => {
     if (!passwordMatches)
       return res.status(401).json({ error: "invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_TOKEN, {
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_TOKEN, {
       expiresIn: "1h",
     });
 
-    res.json({ token, user: { id: user._id, username: user.username } });
+    res.json({ token, user: { userId: user._id, username: user.username } });
 
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ error: "server error" });
+  }
+});
+
+router.get("/me", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId, "-passwordHash");
+    if (!user) return res.status(404).json({ error: "user not found" });
+
+    return res.json({ user });
   } catch (e) {
     console.log(e);
     return res.status(500).json({ error: "server error" });

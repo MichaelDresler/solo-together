@@ -2,6 +2,7 @@ import { useState } from "react";
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("")
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -12,6 +13,7 @@ export default function Login() {
       password: formData.get("password"),
     };
     try {
+      //send fetch req and wait for response
       const res = await fetch("http://localhost:5001/api/auth/login", {
         method: "POST",
         headers: {
@@ -19,34 +21,43 @@ export default function Login() {
         },
         body: JSON.stringify(loginInfo),
       });
+
       const data = await res.json();
       if (!res.ok) {
+        setErr(data.error)
         throw new Error(data.error);
+      }
+      else{
+              setLoading(true)
       }
       localStorage.setItem("token", data.token);
       console.log("logged in:", data.user);
+
     } catch (err) {
       console.error(err.message);
     }
 
-      setLoading(false);
+      // setLoading(false);
   };
 
   return (
-    <div className="flex  items-center justify-center h-screen">
+    <div className="flex flex-col  max-w-xl mx-auto justify-center h-screen">
+      <div className="text-red-500">
+        {err}
+      </div>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <input
           name="username"
           type="text"
-          className="w-100 h-12 bg-white/20 border border-white/30"
+          className="w-full h-12 bg-white/20 border border-white/30"
         />
         <input
           type="text"
           name="password"
-          className="w-100 h-12 bg-white/20 border border-white/30"
+          className="w-full h-12 bg-white/20 border border-white/30"
         />
 
-        <button disabled={loading} type="submit">
+        <button className="bg-blue-600 h-14" disabled={loading} type="submit">
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
