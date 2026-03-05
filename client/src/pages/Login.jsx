@@ -1,12 +1,18 @@
-import { useContext, useState } from "react";
+import { useContext, useState,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
-  const { login } = useContext(AuthContext);
+  const { login, loading, user } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  useEffect (()=>{
+    if(user && !loading){
+      navigate("/dashboard")
+    }
+
+  },[user, loading, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,13 +36,11 @@ export default function Login() {
       if (!res.ok) {
         setErr(data.error);
         throw new Error(data.error);
-      } else {
-        setLoading(true);
-      }
+      } 
       localStorage.setItem("token", data.token);
       console.log("logged in:", data.user);
 
-      login(data.token); // ✅ updates context + localStorage
+      login(data.token); // updates context + localStorage
       navigate("/dashboard");
     } catch (err) {
       console.error(err.message);
