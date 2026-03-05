@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
@@ -16,6 +17,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "login", element: <Login /> },
+      { path: "register", element: <Register /> },
       {
         path: "dashboard",
         element: 
