@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
 
         setUser(data.user);
       } catch (e) {
-        // token invalid/expired → log out
+        // if token invalid/expired then log out
         localStorage.removeItem("token");
         setToken(null);
         setUser(null);

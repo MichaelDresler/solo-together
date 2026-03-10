@@ -7,16 +7,16 @@ const router = express.Router();
 
 router.post("/register", async (req, res) => {
   try {
-    const { username, password,firstName, lastName } = req.body;
+    const { username, password, firstName, lastName } = req.body;
 
     //check if username exists
-    if (!username || !password || !firstName, !lastName) {
+    if (!username || !password || !firstName || !lastName) {
       return res
         .status(400)
         .json({ error: "please fill out the missing field" });
     }
     //must be longer than 8 characters
-    if (password.length < 8) {
+    if (password.length < 1) {
       return res
         .status(400)
         .json({ error: "password must be as least 8 characters" });
@@ -27,12 +27,29 @@ router.post("/register", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ username, hashedPassword, firstName, lastName });
+    const newUser = await User.create({
+      username: username.toLowerCase(),
+      hashedPassword,
+      firstName,
+      lastName,
+    });
     console.log(`new user created: ${newUser}`);
 
-    return res
-      .status(201)
-      .json({ user: { id: newUser._id, username: newUser.username } });
+    const token = jwt.sign(
+      { userId: newUser._id, username: newUser.username },
+      process.env.JWT_SECRET_TOKEN,
+      { expiresIn: "1h" },
+    );
+
+    return res.status(201).json({
+      token,
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+      },
+    });
   } catch (e) {
     console.log(e);
     return res.status(500).json({ error: "server error" });
@@ -42,13 +59,14 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
+    const normalizedUsername = username.toLowerCase()
     // validation
     if (!username || !password) {
       return res
         .status(400)
         .json({ error: "please provide a username or password" });
     }
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username:normalizedUsername });
     // validation
     if (!user) return res.status(404).json({ error: "no such user exists" });
 
@@ -57,12 +75,21 @@ router.post("/login", async (req, res) => {
     if (!passwordMatches)
       return res.status(401).json({ error: "invalid credentials" });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_TOKEN, {
-      expiresIn: "1h",
+    const token = jwt.sign(
+      { userId: user._id, username: user.username },
+      process.env.JWT_SECRET_TOKEN,
+      { expiresIn: "1h" },
+    );
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
     });
-
-    res.json({ token, user: { userId: user._id, username: user.username } });
-
   } catch (e) {
     console.log(e);
     return res.status(500).json({ error: "server error" });
@@ -71,7 +98,7 @@ router.post("/login", async (req, res) => {
 
 router.get("/me", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId, "-passwordHash");
+    const user = await User.findById(req.userId, "-hashedPassword");
     if (!user) return res.status(404).json({ error: "user not found" });
 
     return res.json({ user });

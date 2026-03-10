@@ -1,14 +1,16 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 
+
 export default function Dashboard() {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, token } = useContext(AuthContext);
 
   return (
-    <div className="text-white bg-amber-300 pt-24 ">
-      <h1>Dashboard</h1>
-      <p>Logged in as: {user?.username}</p>
-      <button onClick={logout}>Logout</button>
-    </div>
+    <main className="p-6 space-y-8 w-full">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Welcome, {user?.username}</h1>
+      </div>
+
+    </main>
   );
 }

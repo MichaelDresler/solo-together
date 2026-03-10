@@ -3,6 +3,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import "dotenv/config";
 import authRoutes from "./routes/auth.js"
+import eventRoutes from "./routes/events.js";
 
 const app = express();
 const PORT = 5001;
@@ -13,6 +14,7 @@ const clientOptions = {
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use("/api/auth", authRoutes)
+app.use("/api/events", eventRoutes);
 
 async function connectDB() {
   try {

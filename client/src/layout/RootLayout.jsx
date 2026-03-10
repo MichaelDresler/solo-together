@@ -3,7 +3,7 @@ import Nav from "../components/nav";
 
 export default function RootLayout(){
     return(
-        <div className="">
+        <div className="flex">
             <Nav/>
             <Outlet/>
         </div>
