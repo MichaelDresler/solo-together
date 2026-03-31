@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const events = await Event.find()
-      .populate("userId", "username") 
+      .populate("userId", "username firstName lastName")
       .sort({ createdAt: -1 });
 
     return res.json(events);

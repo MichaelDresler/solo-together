@@ -1,13 +1,15 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import EventList from "../components/EventList";
 import CreateEvent from "../components/CreateEvent";
 
 export default function Events() {
-  const { user, logout, token } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
   const [err, setErr] = useState("");
   const [events, setEvents] = useState([]);
-  
+
+  const [sortBy, setSortBy] = useState("a-z");
+  const [filterByUser, setFilterByUser] = useState("all");
 
   async function loadEvents() {
     try {
@@ -37,6 +39,45 @@ export default function Events() {
     loadEvents();
   }, []);
 
+  // get unique creators for dropdown
+  const uniqueCreators = useMemo(() => {
+    const creators = events.map((event) => ({
+      id: event.userId?._id || event.userId,
+      name: event.userId?.username || "Unknown",
+    }));
+
+    return creators.filter(
+      (creator, index, self) =>
+        index === self.findIndex((c) => c.id === creator.id)
+    );
+  }, [events]);
+
+  // filter + sort events before rendering
+  const displayEvents = useMemo(() => {
+    let filtered = [...events];
+
+    if (filterByUser !== "all") {
+      filtered = filtered.filter((event) => {
+        const creatorId = event.userId?._id || event.userId;
+        return creatorId === filterByUser;
+      });
+    }
+
+    filtered.sort((a, b) => {
+      if (sortBy === "a-z") {
+        return a.title.localeCompare(b.title);
+      }
+
+      if (sortBy === "z-a") {
+        return b.title.localeCompare(a.title);
+      }
+
+      return 0;
+    });
+
+    return filtered;
+  }, [events, sortBy, filterByUser]);
+
   return (
     <main className="p-6 space-y-8 w-full">
       <div className="flex items-center justify-between">
@@ -47,7 +88,39 @@ export default function Events() {
 
       {user && <CreateEvent refresh={loadEvents} />}
 
-      <EventList events={events} refresh={loadEvents} />
+      <div className="flex gap-4">
+        <div className="flex flex-col">
+          <label htmlFor="sort">Sort</label>
+          <select
+            id="sort"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="a-z">Title: A-Z</option>
+            <option value="z-a">Title: Z-A</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col">
+          <label htmlFor="creator">Filter by creator</label>
+          <select
+            id="creator"
+            value={filterByUser}
+            onChange={(e) => setFilterByUser(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="all">All events</option>
+            {uniqueCreators.map((creator) => (
+              <option key={creator.id} value={creator.id}>
+                {creator.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <EventList events={displayEvents} refresh={loadEvents} />
     </main>
   );
 }
