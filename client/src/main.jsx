@@ -10,6 +10,7 @@ import RootLayout from "./layout/RootLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
 
 const router = createBrowserRouter([
   {
@@ -26,12 +27,17 @@ const router = createBrowserRouter([
             <Dashboard/>
           </ProtectedRoute>
       },
-            {
+      {
         path: "events",
         element: 
-          <ProtectedRoute>
+
             <Events/>
-          </ProtectedRoute>
+
+      },
+      {
+        path: "events/:id",
+        element:
+            <EventDetail />
       },
     ],
   },

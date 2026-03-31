@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import "dotenv/config";
 import authRoutes from "./routes/auth.js"
 import eventRoutes from "./routes/events.js";
+import ticketmasterRoutes from "./routes/ticketmaster.js";
 
 const app = express();
 const PORT = 5001;
@@ -15,6 +16,7 @@ app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use("/api/auth", authRoutes)
 app.use("/api/events", eventRoutes);
+app.use("/api/ticketmaster", ticketmasterRoutes);
 
 async function connectDB() {
   try {

@@ -2,6 +2,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import EventList from "../components/EventList";
 import CreateEvent from "../components/CreateEvent";
+import TicketmasterSearch from "../components/TicketmasterSearch";
 
 export default function Events() {
   const { user, token } = useContext(AuthContext);
@@ -42,8 +43,8 @@ export default function Events() {
   // get unique creators for dropdown
   const uniqueCreators = useMemo(() => {
     const creators = events.map((event) => ({
-      id: event.userId?._id || event.userId,
-      name: event.userId?.username || "Unknown",
+      id: event.createdBy?._id || event.userId?._id || event.createdBy || event.userId,
+      name: event.createdBy?.username || event.userId?.username || "Unknown",
     }));
 
     return creators.filter(
@@ -58,7 +59,8 @@ export default function Events() {
 
     if (filterByUser !== "all") {
       filtered = filtered.filter((event) => {
-        const creatorId = event.userId?._id || event.userId;
+        const creatorId =
+          event.createdBy?._id || event.userId?._id || event.createdBy || event.userId;
         return creatorId === filterByUser;
       });
     }
@@ -87,6 +89,8 @@ export default function Events() {
       {err && <p className="text-red-600">{err}</p>}
 
       {user && <CreateEvent refresh={loadEvents} />}
+
+      <TicketmasterSearch />
 
       <div className="flex gap-4">
         <div className="flex flex-col">
