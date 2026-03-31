@@ -83,7 +83,7 @@ export default function Events() {
   return (
     <main className="p-6 space-y-8 w-full">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Welcome, {user?.username}</h1>
+      <h1 className="text-3xl font-bold capitalize">events</h1> 
       </div>
 
       {err && <p className="text-red-600">{err}</p>}

@@ -54,7 +54,7 @@ export default function EventCard({ event, refresh }) {
           Open Event Page
         </Link>
       </div>
-
+{ user &&
       <div className="mt-4 space-y-3">
         <GoingSoloButton localEventId={event._id} />
 
@@ -71,6 +71,7 @@ export default function EventCard({ event, refresh }) {
           )}
         </div>
       </div>
+}
     </div>
   );
 }
