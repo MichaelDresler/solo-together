@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import ConfirmationModal from "./ConfirmationModal";
+import UserAvatar from "./UserAvatar";
 
 export default function GoingSoloButton({
   localEventId = null,
@@ -31,7 +32,7 @@ export default function GoingSoloButton({
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const data = await res.json();
@@ -57,14 +58,17 @@ export default function GoingSoloButton({
       throw new Error("No local event id or import payload provided");
     }
 
-    const res = await fetch("http://localhost:5001/api/events/import-ticketmaster", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const res = await fetch(
+      "http://localhost:5001/api/events/import-ticketmaster",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(importPayload),
       },
-      body: JSON.stringify(importPayload),
-    });
+    );
 
     const data = await res.json();
 
@@ -82,12 +86,15 @@ export default function GoingSoloButton({
 
     try {
       const eventId = await ensureLocalEventId();
-      const res = await fetch(`http://localhost:5001/api/events/${eventId}/solo`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `http://localhost:5001/api/events/${eventId}/solo`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       const data = await res.json();
 
@@ -113,12 +120,15 @@ export default function GoingSoloButton({
     setError("");
 
     try {
-      const res = await fetch(`http://localhost:5001/api/events/${resolvedEventId}/solo`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `http://localhost:5001/api/events/${resolvedEventId}/solo`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       const data = await res.json();
 
@@ -138,20 +148,28 @@ export default function GoingSoloButton({
 
   const currentUserId = user?._id || user?.id;
   const isGoingSolo = attendees.some(
-    (attendee) => attendee.userId?._id === currentUserId
+    (attendee) => attendee.userId?._id === currentUserId,
   );
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="space-y-2 justify-between ">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={isGoingSolo ? () => setShowLeaveModal(true) : handleGoingSolo}
+            onClick={
+              isGoingSolo ? () => setShowLeaveModal(true) : handleGoingSolo
+            }
             disabled={loading}
             className={` ${!isGoingSolo ? "bg-black" : "bg-red-700"} inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed `}
           >
-            {loading ? (isGoingSolo ? "Leaving..." : "Saving...") : isGoingSolo ? "Leave Event" : "Going Solo"}
+            {loading
+              ? isGoingSolo
+                ? "Leaving..."
+                : "Saving..."
+              : isGoingSolo
+                ? "Leave Event"
+                : "Going Solo"}
           </button>
 
           {resolvedEventId && (
@@ -168,16 +186,25 @@ export default function GoingSoloButton({
 
         {resolvedEventId && (
           <div className="space-y-1 text-sm text-gray-600">
-            <p>
-              {attendees.length} {attendees.length === 1 ? "person" : "people"} going solo
-            </p>
             {attendees.length > 0 && (
-              <p>
-                {attendees
-                  .map((attendee) => attendee.userId?.username || "Unknown")
-                  .join(", ")}
-              </p>
+              <div className="flex  -space-x-3  ">
+
+                {attendees.map((person) => (
+                  <UserAvatar
+                  
+                    key={person.userId?._id}
+                    user={person.userId}
+                    size={32}
+                    className={`h-8 w-8 border-white border relative`}
+                  />
+                ))}
+              </div>
             )}
+
+            <p>
+              {attendees.length } {attendees.length === 1 ? "person" : "people"}{" "}
+              going solo
+            </p>
           </div>
         )}
       </div>

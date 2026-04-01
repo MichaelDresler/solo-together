@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState } from "react";
+import { createAuthHeaders, getApiUrl } from "../lib/api";
 
 export const AuthContext = createContext(null);
 
@@ -7,37 +8,40 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user when token changes
-  useEffect(() => {
-    async function loadMe() {
-      if (!token) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await fetch("http://localhost:5001/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) throw new Error(data.error || "Failed to load user");
-
-        setUser(data.user);
-      } catch (e) {
-        // if token invalid/expired then log out
-        localStorage.removeItem("token");
-        setToken(null);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
+  async function refreshUser(activeToken = token) {
+    if (!activeToken) {
+      setUser(null);
+      setLoading(false);
+      return;
     }
 
+    try {
+      const res = await fetch(getApiUrl("/api/auth/me"), {
+        headers: createAuthHeaders(activeToken),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Failed to load user");
+
+      setUser(data.user);
+    } catch (e) {
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function updateUser(nextUser) {
+    setUser(nextUser);
+  }
+
+  // Load user when token changes
+  useEffect(() => {
     setLoading(true);
-    loadMe();
+    refreshUser(token);
   }, [token]);
 
   function login(newToken) {
@@ -52,7 +56,9 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ token, user, loading, login, logout, refreshUser, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

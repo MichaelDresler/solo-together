@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import EventList from "../components/EventList";
-import CreateEvent from "../components/CreateEvent";
 import TicketmasterSearch from "../components/TicketmasterSearch";
 
 export default function Events() {
@@ -83,12 +83,18 @@ export default function Events() {
   return (
     <main className="p-6 space-y-8 w-full">
       <div className="flex items-center justify-between">
-      <h1 className="text-3xl font-bold capitalize">events</h1> 
+      <h1 className="text-3xl font-bold capitalize">events</h1>
+      {user && (
+        <Link
+          to="/create-event"
+          className="inline-flex items-center rounded-xl bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800"
+        >
+          Create Event
+        </Link>
+      )}
       </div>
 
       {err && <p className="text-red-600">{err}</p>}
-
-      {user && <CreateEvent refresh={loadEvents} />}
 
       <TicketmasterSearch />
 

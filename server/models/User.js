@@ -18,6 +18,14 @@ const UserSchema = new Schema({
     lastName:{
         type:String,
         required:true
+    },
+    avatarUrl: {
+        type: String,
+        default: "",
+    },
+    avatarPublicId: {
+        type: String,
+        default: "",
     }
 
 })

@@ -5,6 +5,28 @@ import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
+function normalizeEventPayload(payload) {
+  return {
+    title: payload.title?.trim() || "",
+    description: payload.description?.trim() || "",
+    startDate: payload.startDate ? new Date(payload.startDate) : null,
+    endDate: payload.endDate ? new Date(payload.endDate) : null,
+    locationName: payload.locationName?.trim() || "",
+    addressLine1: payload.addressLine1?.trim() || "",
+    city: payload.city?.trim() || "",
+    stateOrProvince: payload.stateOrProvince?.trim() || "",
+    postalCode: payload.postalCode?.trim() || "",
+    country: payload.country?.trim() || "",
+    imageUrl: payload.imageUrl?.trim() || "",
+    externalUrl: payload.externalUrl?.trim() || "",
+    classification: payload.classification?.trim() || "",
+  };
+}
+
+function isValidDate(value) {
+  return value instanceof Date && Number.isFinite(value.valueOf());
+}
+
 async function findOrCreateTicketmasterEvent(payload) {
   const {
     externalId,
@@ -13,8 +35,12 @@ async function findOrCreateTicketmasterEvent(payload) {
     startDate = null,
     endDate = null,
     locationName = "",
+    addressLine1 = "",
     city = "",
+    stateOrProvince = "",
+    postalCode = "",
     country = "",
+    classification = "",
     imageUrl = "",
     externalUrl = "",
   } = payload;
@@ -35,8 +61,12 @@ async function findOrCreateTicketmasterEvent(payload) {
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         locationName,
+        addressLine1,
         city,
+        stateOrProvince,
+        postalCode,
         country,
+        classification,
         imageUrl,
         externalUrl,
       },
@@ -53,8 +83,8 @@ async function findOrCreateTicketmasterEvent(payload) {
 router.get("/", async (req, res) => {
   try {
     const events = await Event.find()
-      .populate("createdBy", "username firstName lastName")
-      .populate("userId", "username firstName lastName")
+      .populate("createdBy", "username firstName lastName avatarUrl")
+      .populate("userId", "username firstName lastName avatarUrl")
       .sort({ createdAt: -1 });
 
     return res.json(events);
@@ -68,8 +98,8 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
-      .populate("createdBy", "username firstName lastName")
-      .populate("userId", "username firstName lastName");
+      .populate("createdBy", "username firstName lastName avatarUrl")
+      .populate("userId", "username firstName lastName avatarUrl");
 
     if (!event) {
       return res.status(404).json({ error: "event not found" });
@@ -85,16 +115,36 @@ router.get("/:id", async (req, res) => {
 // POST create new event (protected)
 router.post("/", auth, async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const normalizedEvent = normalizeEventPayload(req.body);
 
-    if (!title) {
+    if (!normalizedEvent.title) {
       return res.status(400).json({ error: "title is required" });
+    }
+
+    if (
+      (normalizedEvent.startDate && !isValidDate(normalizedEvent.startDate)) ||
+      (normalizedEvent.endDate && !isValidDate(normalizedEvent.endDate))
+    ) {
+      return res.status(400).json({
+        error: "please provide valid start and end dates",
+      });
+    }
+
+    if (
+      normalizedEvent.startDate &&
+      normalizedEvent.endDate &&
+      isValidDate(normalizedEvent.startDate) &&
+      isValidDate(normalizedEvent.endDate) &&
+      normalizedEvent.endDate < normalizedEvent.startDate
+    ) {
+      return res.status(400).json({
+        error: "end date must be after the start date",
+      });
     }
 
     const newEvent = await Event.create({
       source: "internal",
-      title,
-      description,
+      ...normalizedEvent,
       createdBy: req.userId,
       userId: req.userId,
     });
@@ -116,8 +166,12 @@ router.post("/import-ticketmaster", auth, async (req, res) => {
       startDate,
       endDate,
       locationName,
+      addressLine1,
       city,
+      stateOrProvince,
+      postalCode,
       country,
+      classification,
       imageUrl,
       externalUrl,
     } = req.body;
@@ -135,8 +189,12 @@ router.post("/import-ticketmaster", auth, async (req, res) => {
       startDate,
       endDate,
       locationName,
+      addressLine1,
       city,
+      stateOrProvince,
+      postalCode,
       country,
+      classification,
       imageUrl,
       externalUrl,
     });
@@ -166,6 +224,7 @@ router.post("/:id/solo", auth, async (req, res) => {
         setDefaultsOnInsert: true,
       }
     ).populate("userId", "username firstName lastName");
+    
 
     return res.status(201).json(attendance);
   } catch (e) {
@@ -206,7 +265,7 @@ router.get("/:id/solo-attendees", auth, async (req, res) => {
       eventId: event._id,
       status: "going_solo",
     })
-      .populate("userId", "username firstName lastName")
+      .populate("userId", "username firstName lastName avatarUrl")
       .sort({ createdAt: -1 });
 
     return res.json(attendees);

@@ -11,6 +11,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import CreateEventPage from "./pages/CreateEventPage";
+import Profile from "./pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -38,6 +40,22 @@ const router = createBrowserRouter([
         path: "events/:id",
         element:
             <EventDetail />
+      },
+      {
+        path: "create-event",
+        element: (
+          <ProtectedRoute>
+            <CreateEventPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "profile",
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
       },
     ],
   },

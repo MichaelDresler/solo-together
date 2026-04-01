@@ -54,7 +54,10 @@ router.get("/events", async (req, res) => {
           "",
         locationName: venue?.name || "",
         venue: venue?.name || "",
+        addressLine1: venue?.address?.line1 || "",
         city: venue?.city?.name || "",
+        stateOrProvince: venue?.state?.name || venue?.state?.stateCode || "",
+        postalCode: venue?.postalCode || "",
         country: venue?.country?.name || venue?.country?.countryCode || "",
         imageUrl: image?.url || "",
         classification:

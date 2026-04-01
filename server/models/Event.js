@@ -42,12 +42,32 @@ const eventSchema = new Schema(
       default: "",
       trim: true,
     },
+    addressLine1: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     city: {
       type: String,
       default: "",
       trim: true,
     },
+    stateOrProvince: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    postalCode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     country: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    classification: {
       type: String,
       default: "",
       trim: true,

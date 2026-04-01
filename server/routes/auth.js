@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import auth from "../middleware/auth.js";
+import { serializeUserProfile } from "../utils/profile.js";
 const router = express.Router();
 
 router.post("/register", async (req, res) => {
@@ -44,10 +45,12 @@ router.post("/register", async (req, res) => {
     return res.status(201).json({
       token,
       user: {
+        _id: newUser._id,
         id: newUser._id,
         username: newUser.username,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
+        avatarUrl: newUser.avatarUrl || "",
       },
     });
   } catch (e) {
@@ -84,10 +87,12 @@ router.post("/login", async (req, res) => {
     res.status(200).json({
       token,
       user: {
+        _id: user._id,
         id: user._id,
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        avatarUrl: user.avatarUrl || "",
       },
     });
   } catch (e) {
@@ -98,10 +103,10 @@ router.post("/login", async (req, res) => {
 
 router.get("/me", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId, "-hashedPassword");
+    const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: "user not found" });
 
-    return res.json({ user });
+    return res.json({ user: serializeUserProfile(user) });
   } catch (e) {
     console.log(e);
     return res.status(500).json({ error: "server error" });

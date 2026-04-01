@@ -54,8 +54,12 @@ export default function TicketmasterSearch() {
       startDate: event.start || null,
       endDate: event.end || null,
       locationName: event.locationName || event.venue || "",
+      addressLine1: event.addressLine1 || "",
       city: event.city || "",
+      stateOrProvince: event.stateOrProvince || "",
+      postalCode: event.postalCode || "",
       country: event.country || "",
+      classification: event.classification || "",
       imageUrl: event.imageUrl || "",
       externalUrl: event.url || "",
     };
@@ -154,6 +158,7 @@ export default function TicketmasterSearch() {
               <p className="text-sm text-gray-600">
                 {event.venue || "Venue unavailable"}
                 {event.city ? `, ${event.city}` : ""}
+                {event.stateOrProvince ? `, ${event.stateOrProvince}` : ""}
                 {event.country ? `, ${event.country}` : ""}
               </p>
               <p className="text-sm text-gray-500">
