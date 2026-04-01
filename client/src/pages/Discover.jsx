@@ -81,7 +81,7 @@ export default function Discover() {
   }, [events, sortBy, filterByUser]);
 
   return (
-    <main className="px-6  w-full">
+    <main className="px-6 max-w-[1000px] mx-auto  w-full">
 
       {err && <p className="text-red-600">{err}</p>}
 

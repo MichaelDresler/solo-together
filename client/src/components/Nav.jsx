@@ -16,7 +16,19 @@ export default function Nav() {
 
   const authenticatedRoutes = [
     { name: "Dashboard", link: "/dashboard" },
-    { name: "Discover", link: "/discover" },
+    {
+      name: "Discover",
+      link: "/discover",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 16 16">
+          <path
+            fill="currentColor"
+            fill-rule="evenodd"
+            d="M2 7.997a5.997 5.997 0 1 1 11.995 0A5.997 5.997 0 0 1 2 7.997M7.997.5a7.497 7.497 0 1 0 0 14.995A7.497 7.497 0 0 0 7.997.5m3.323 5.084a.75.75 0 0 0-.91-.91l-3.548.888c-.64.16-1.14.66-1.3 1.3l-.888 3.549a.75.75 0 0 0 .91.91l3.548-.888c.64-.16 1.14-.66 1.3-1.3zM7.226 7.017l2.335-.584-.583 2.335a.29.29 0 0 1-.21.21l-2.335.584.584-2.336a.29.29 0 0 1 .21-.21"
+          ></path>
+        </svg>
+      ),
+    },
   ];
 
   const publicRoutes = [{ name: "Discover", link: "/discover" }];
@@ -56,9 +68,10 @@ export default function Nav() {
           {publicRoutes.map((route) => (
             <li className="flex text-sm text-black/60" key={route.name}>
               <Link
-                className="rounded-md p-2.5 text-center font-medium hover:text-black"
+                className="rounded-md p-2.5 flex flex-row text-center font-medium hover:text-black"
                 to={route.link}
               >
+                {route.icon}
                 {route.name}
               </Link>
             </li>
@@ -82,7 +95,7 @@ export default function Nav() {
   }
 
   return (
-    <nav className="fixed top-0 z-40 flex w-full items-center justify-between border-b border-black/10 bg-white p-2">
+    <nav className="fixed top-0 z-40 flex w-full items-center justify-between border-b border-black/10 bg-white p-1 px-4">
       <h1 className="flex w-full items-center text-2xl font-bold tracking-tight text-black">
         SoloTogether
       </h1>
@@ -91,11 +104,14 @@ export default function Nav() {
         {authenticatedRoutes.map((route) => (
           <li className="flex text-sm text-black/60" key={route.name}>
             <Link
-              className={`rounded-md p-2.5 text-center font-medium hover:text-black ${
-                slicedPathname === route.link ? "text-[#CF5812]" : "text-black/60"
+              className={`rounded-md p-2.5  flex flex-row  justify-center font-bold tracking-tight items-center gap-1 text-center hover:text-black ${
+                slicedPathname === route.link
+                  ? "text-[#CF5812]"
+                  : "text-black/60"
               }`}
               to={route.link}
             >
+              {route.icon}
               {route.name}
             </Link>
           </li>
@@ -109,14 +125,12 @@ export default function Nav() {
             onClick={() => setIsMenuOpen((current) => !current)}
             aria-haspopup="menu"
             aria-expanded={isMenuOpen}
-            className={`rounded-full p-1 transition duration-200 focus:outline-none focus:ring-2 focus:ring-[#CF5812]/30 ${
-              isMenuOpen ? "bg-stone-100" : "hover:bg-stone-100"
-            }`}
+            className={`rounded-full p-2 transition  hover:bg-black/5 duration-400 cursor-pointer`}
           >
             <UserAvatar
               user={user}
-              size={40}
-              className="h-10 w-10 border border-stone-200"
+              size={32}
+              className="  border border-stone-200"
               textClassName="text-sm"
             />
           </button>
@@ -140,7 +154,9 @@ export default function Nav() {
                 <p className="truncate text-sm font-semibold text-stone-900">
                   {getUserDisplayName(user)}
                 </p>
-                <p className="truncate text-xs text-stone-500">@{user?.username}</p>
+                <p className="truncate text-xs text-stone-500">
+                  @{user?.username}
+                </p>
               </div>
             </div>
 

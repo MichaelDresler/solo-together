@@ -16,31 +16,35 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
 const router = createBrowserRouter([
+  // 🔓 Public routes (NO RootLayout)
   {
     path: "/",
-    element: <RootLayout />,
     children: [
       { index: true, element: <Home /> },
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
+    ],
+  },
+
+  // 🔐 App routes (WITH RootLayout)
+  {
+    element: <RootLayout />,
+    children: [
       {
         path: "dashboard",
-        element: 
+        element: (
           <ProtectedRoute>
-            <Dashboard/>
+            <Dashboard />
           </ProtectedRoute>
+        ),
       },
       {
         path: "discover",
-        element: 
-
-            <Discover/>
-
+        element: <Discover />,
       },
       {
         path: "events/:id",
-        element:
-            <EventDetail />
+        element: <EventDetail />,
       },
       {
         path: "create-event",
@@ -68,7 +72,6 @@ const router = createBrowserRouter([
       },
     ],
   },
-  {},
 ]);
 createRoot(document.getElementById("root")).render(
   <StrictMode>
