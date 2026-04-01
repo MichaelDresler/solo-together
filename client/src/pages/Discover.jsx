@@ -4,7 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 import EventList from "../components/EventList";
 import TicketmasterSearch from "../components/TicketmasterSearch";
 
-export default function Events() {
+export default function Discover() {
   const { user, token } = useContext(AuthContext);
   const [err, setErr] = useState("");
   const [events, setEvents] = useState([]);
@@ -81,9 +81,12 @@ export default function Events() {
   }, [events, sortBy, filterByUser]);
 
   return (
-    <main className="p-6 space-y-8 w-full">
-      <div className="flex items-center justify-between">
-      <h1 className="text-3xl font-bold capitalize">events</h1>
+    <main className="px-6  w-full">
+
+      {err && <p className="text-red-600">{err}</p>}
+
+      <TicketmasterSearch />
+
       {user && (
         <Link
           to="/create-event"
@@ -92,12 +95,8 @@ export default function Events() {
           Create Event
         </Link>
       )}
-      </div>
-
-      {err && <p className="text-red-600">{err}</p>}
-
-      <TicketmasterSearch />
-
+      <h1 className="text-3xl font-bold capitalize">Discover new events</h1>
+      <h2 className="pb-12">Explore popular events near you, browse by category, or check out some of the great community calendars.</h2>
       <div className="flex gap-4">
         <div className="flex flex-col">
           <label htmlFor="sort">Sort</label>

@@ -96,39 +96,34 @@ export default function TicketmasterSearch() {
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">
-          Search Ticketmaster
-        </h2>
-        <p className="text-sm text-gray-600">
-          Search real events in Canada through the Ticketmaster Discovery API.
-        </p>
-      </div>
+    <section className="space-y-4 rounded-xl border border-gray-200  p-6 shadow-sm">
 
       <form className="flex gap-3" onSubmit={handleSubmit}>
+        <div className="relative max-w-200 w-full">
+
         <input
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className=" w-full rounded-full bg-black/5  px-4 py-3.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
           placeholder="Search concerts, games, or shows"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 disabled:bg-stone-400"
+          className=" absolute top-1/2 -translate-y-1/2 right-1.5 bg-[#b35119] p-2.5  rounded-full  text-sm font-medium text-white transition hover:bg-stone-800 disabled:bg-stone-400"
         >
-          {loading ? "Searching..." : "Search"}
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
+  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+</svg>
+
         </button>
+        </div>
       </form>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {!loading && !error && events.length === 0 && (
-        <p className="text-sm text-gray-500">
-          Search to load Ticketmaster events.
-        </p>
-      )}
+      
 
       <div className="grid gap-4 md:grid-cols-2">
         {events.map((event) => (

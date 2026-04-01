@@ -9,7 +9,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootLayout from "./layout/RootLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
-import Events from "./pages/Events";
+import Discover from "./pages/Discover";
 import EventDetail from "./pages/EventDetail";
 import CreateEventPage from "./pages/CreateEventPage";
 import Profile from "./pages/Profile";
@@ -30,10 +30,10 @@ const router = createBrowserRouter([
           </ProtectedRoute>
       },
       {
-        path: "events",
+        path: "discover",
         element: 
 
-            <Events/>
+            <Discover/>
 
       },
       {

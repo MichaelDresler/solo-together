@@ -15,7 +15,7 @@ export default function Nav() {
 
   const routes = [
     { name: "Dashboard", link: "/dashboard" },
-    { name: "Events", link: "/events" },
+    { name: "Discover", link: "/discover" },
     { name: "Profile", link: "/profile" },
   ];
 
