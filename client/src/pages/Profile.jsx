@@ -1,32 +1,60 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
+import EventList from "../components/EventList";
 import UserAvatar from "../components/UserAvatar";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
+import { getUserDisplayName } from "../utils/avatar";
+
+function sortEvents(events) {
+  const now = Date.now();
+
+  return [...events].sort((left, right) => {
+    const leftTime = left?.startDate
+      ? new Date(left.startDate).getTime()
+      : Number.POSITIVE_INFINITY;
+    const rightTime = right?.startDate
+      ? new Date(right.startDate).getTime()
+      : Number.POSITIVE_INFINITY;
+    const leftUpcoming = Number.isFinite(leftTime) && leftTime >= now;
+    const rightUpcoming = Number.isFinite(rightTime) && rightTime >= now;
+
+    if (leftUpcoming !== rightUpcoming) {
+      return leftUpcoming ? -1 : 1;
+    }
+
+    if (leftUpcoming && rightUpcoming) {
+      return leftTime - rightTime;
+    }
+
+    if (!leftUpcoming && !rightUpcoming) {
+      return rightTime - leftTime;
+    }
+
+    return 0;
+  });
+}
 
 export default function Profile() {
-  const { token, user, updateUser } = useContext(AuthContext);
-  const [profile, setProfile] = useState(null);
-  const [formValues, setFormValues] = useState({ firstName: "", lastName: "" });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState("");
+  const { token, user } = useContext(AuthContext);
+  const [createdEvents, setCreatedEvents] = useState([]);
+  const [attendingEvents, setAttendingEvents] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [profileMessage, setProfileMessage] = useState("");
-  const [avatarMessage, setAvatarMessage] = useState("");
   const [error, setError] = useState("");
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  const displayedUser = user;
 
   useEffect(() => {
     if (!token) return;
 
     let isActive = true;
 
-    async function loadProfile() {
+    async function loadProfileEvents() {
       setLoadingProfile(true);
       setError("");
 
       try {
-        const res = await fetch(getApiUrl("/api/profile/me"), {
+        const res = await fetch(getApiUrl("/api/profile/me/events"), {
           headers: createAuthHeaders(token),
         });
         const data = await res.json();
@@ -37,11 +65,8 @@ export default function Profile() {
 
         if (!isActive) return;
 
-        setProfile(data.user);
-        setFormValues({
-          firstName: data.user.firstName || "",
-          lastName: data.user.lastName || "",
-        });
+        setCreatedEvents(sortEvents(data.createdEvents || []));
+        setAttendingEvents(sortEvents(data.attendingEvents || []));
       } catch (fetchError) {
         if (!isActive) return;
         setError(fetchError.message || "Failed to load profile.");
@@ -52,110 +77,15 @@ export default function Profile() {
       }
     }
 
-    loadProfile();
+    loadProfileEvents();
 
     return () => {
       isActive = false;
     };
-  }, [token]);
+  }, [refreshTick, token]);
 
-  useEffect(() => {
-    if (!selectedFile) {
-      setAvatarPreview("");
-      return undefined;
-    }
-
-    const objectUrl = URL.createObjectURL(selectedFile);
-    setAvatarPreview(objectUrl);
-
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [selectedFile]);
-
-  const displayedUser = useMemo(() => {
-    return profile || user;
-  }, [profile, user]);
-
-  function handleInputChange(event) {
-    const { name, value } = event.target;
-    setFormValues((currentValues) => ({
-      ...currentValues,
-      [name]: value,
-    }));
-  }
-
-  function handleFileChange(event) {
-    const file = event.target.files?.[0];
-    setSelectedFile(file || null);
-    setAvatarMessage("");
-    setError("");
-  }
-
-  async function handleProfileSubmit(event) {
-    event.preventDefault();
-    setSavingProfile(true);
-    setProfileMessage("");
-    setError("");
-
-    try {
-      const res = await fetch(getApiUrl("/api/profile/me"), {
-        method: "PATCH",
-        headers: createAuthHeaders(token, {
-          "Content-Type": "application/json",
-        }),
-        body: JSON.stringify(formValues),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to update profile.");
-      }
-
-      setProfile(data.user);
-      updateUser(data.user);
-      setProfileMessage("Profile updated.");
-    } catch (submitError) {
-      setError(submitError.message || "Failed to update profile.");
-    } finally {
-      setSavingProfile(false);
-    }
-  }
-
-  async function handleAvatarSubmit(event) {
-    event.preventDefault();
-
-    if (!selectedFile) {
-      setAvatarMessage("Choose an image before uploading.");
-      return;
-    }
-
-    setUploadingAvatar(true);
-    setAvatarMessage("");
-    setError("");
-
-    try {
-      const formData = new FormData();
-      formData.append("avatar", selectedFile);
-
-      const res = await fetch(getApiUrl("/api/profile/me/avatar"), {
-        method: "PATCH",
-        headers: createAuthHeaders(token),
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to upload avatar.");
-      }
-
-      setProfile(data.user);
-      updateUser(data.user);
-      setSelectedFile(null);
-      setAvatarMessage("Avatar updated.");
-    } catch (uploadError) {
-      setError(uploadError.message || "Failed to upload avatar.");
-    } finally {
-      setUploadingAvatar(false);
-    }
+  function refreshProfileEvents() {
+    setRefreshTick((current) => current + 1);
   }
 
   if (loadingProfile) {
@@ -164,34 +94,28 @@ export default function Profile() {
 
   return (
     <main className="w-full p-6">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-5 md:flex-row md:items-center">
-            <div className="relative">
-              {avatarPreview ? (
-                <img
-                  src={avatarPreview}
-                  alt="New avatar preview"
-                  className="h-32 w-32 rounded-full object-cover ring-4 ring-orange-100"
-                />
-              ) : (
-                <UserAvatar
-                  user={displayedUser}
-                  size={128}
-                  className="h-32 w-32 ring-4 ring-stone-100"
-                  textClassName="text-3xl"
-                />
-              )}
-            </div>
+            <UserAvatar
+              user={displayedUser}
+              size={128}
+              className="h-32 w-32 ring-4 ring-stone-100"
+              textClassName="text-3xl"
+            />
 
             <div className="space-y-1">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
                 Profile
               </p>
               <h1 className="text-3xl font-bold text-stone-900">
-                {displayedUser?.firstName} {displayedUser?.lastName}
+                {getUserDisplayName(displayedUser)}
               </h1>
               <p className="text-sm text-stone-600">@{displayedUser?.username}</p>
+              <p className="text-sm text-stone-500">
+                Your hosted events and solo plans, with upcoming events shown
+                first.
+              </p>
             </div>
           </div>
         </header>
@@ -202,86 +126,44 @@ export default function Profile() {
           </div>
         )}
 
-        <section className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
-          <form
-            onSubmit={handleProfileSubmit}
-            className="space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
-          >
+        <section className="space-y-6">
+          <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-stone-900">Update Profile</h2>
+              <h2 className="text-xl font-semibold text-stone-900">
+                Events You Created
+              </h2>
               <p className="text-sm text-stone-600">
-                Keep your display name current across the app.
+                These are the events you are currently hosting.
               </p>
             </div>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">First name</span>
-              <input
-                name="firstName"
-                value={formValues.firstName}
-                onChange={handleInputChange}
-                className="w-full rounded-xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-500"
-                placeholder="First name"
-              />
-            </label>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Last name</span>
-              <input
-                name="lastName"
-                value={formValues.lastName}
-                onChange={handleInputChange}
-                className="w-full rounded-xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-500"
-                placeholder="Last name"
-              />
-            </label>
-
-            <button
-              type="submit"
-              disabled={savingProfile}
-              className="inline-flex rounded-xl bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {savingProfile ? "Saving..." : "Save Changes"}
-            </button>
-
-            {profileMessage && (
-              <p className="text-sm text-green-700">{profileMessage}</p>
+            {createdEvents.length > 0 ? (
+              <EventList events={createdEvents} refresh={refreshProfileEvents} />
+            ) : (
+              <p className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-6 text-sm text-stone-600">
+                You have not created any events yet.
+              </p>
             )}
-          </form>
+          </div>
 
-          <form
-            onSubmit={handleAvatarSubmit}
-            className="space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
-          >
+          <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-stone-900">Update Avatar</h2>
+              <h2 className="text-xl font-semibold text-stone-900">
+                Events You&apos;re Going Solo To
+              </h2>
               <p className="text-sm text-stone-600">
-                Upload a square-friendly image. JPG, PNG, GIF, and WebP work well.
+                These are the events you have joined as a solo attendee.
               </p>
             </div>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Avatar image</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="block w-full text-sm text-stone-600 file:mr-4 file:rounded-lg file:border-0 file:bg-orange-100 file:px-4 file:py-2 file:font-medium file:text-orange-900 hover:file:bg-orange-200"
-              />
-            </label>
-
-            <button
-              type="submit"
-              disabled={uploadingAvatar}
-              className="inline-flex rounded-xl bg-orange-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {uploadingAvatar ? "Uploading..." : "Upload Avatar"}
-            </button>
-
-            {avatarMessage && (
-              <p className="text-sm text-green-700">{avatarMessage}</p>
+            {attendingEvents.length > 0 ? (
+              <EventList events={attendingEvents} refresh={refreshProfileEvents} />
+            ) : (
+              <p className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-6 text-sm text-stone-600">
+                You are not marked as going solo to any events yet.
+              </p>
             )}
-          </form>
+          </div>
         </section>
       </div>
     </main>

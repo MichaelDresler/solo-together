@@ -1,6 +1,8 @@
 import express from "express";
 import multer from "multer";
 import auth from "../middleware/auth.js";
+import Event from "../models/Event.js";
+import SoloAttendance from "../models/SoloAttendance.js";
 import User from "../models/User.js";
 import { deleteCloudinaryAsset, uploadAvatar } from "../utils/cloudinary.js";
 import { serializeUserProfile } from "../utils/profile.js";
@@ -57,6 +59,46 @@ router.get("/me", auth, async (req, res) => {
     }
 
     return res.json({ user: serializeUserProfile(user) });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "server error" });
+  }
+});
+
+router.get("/me/events", auth, async (req, res) => {
+  try {
+    const [createdEvents, attendances] = await Promise.all([
+      Event.find({
+        $or: [{ createdBy: req.userId }, { userId: req.userId }],
+      })
+        .populate("createdBy", "username firstName lastName avatarUrl")
+        .populate("userId", "username firstName lastName avatarUrl")
+        .sort({ startDate: 1, createdAt: -1 }),
+      SoloAttendance.find({
+        userId: req.userId,
+        status: "going_solo",
+      })
+        .populate({
+          path: "eventId",
+          populate: [
+            {
+              path: "createdBy",
+              select: "username firstName lastName avatarUrl",
+            },
+            {
+              path: "userId",
+              select: "username firstName lastName avatarUrl",
+            },
+          ],
+        })
+        .sort({ createdAt: -1 }),
+    ]);
+
+    const attendingEvents = attendances
+      .map((attendance) => attendance.eventId)
+      .filter(Boolean);
+
+    return res.json({ createdEvents, attendingEvents });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: "server error" });

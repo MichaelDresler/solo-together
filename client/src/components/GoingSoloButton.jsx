@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import ConfirmationModal from "./ConfirmationModal";
@@ -7,6 +7,7 @@ import UserAvatar from "./UserAvatar";
 export default function GoingSoloButton({
   localEventId = null,
   importPayload = null,
+  onStatusChange,
 }) {
   const { token, user } = useContext(AuthContext);
   const [resolvedEventId, setResolvedEventId] = useState(localEventId);
@@ -19,12 +20,7 @@ export default function GoingSoloButton({
     setResolvedEventId(localEventId);
   }, [localEventId]);
 
-  useEffect(() => {
-    if (!resolvedEventId || !token) return;
-    loadAttendees(resolvedEventId);
-  }, [resolvedEventId, token]);
-
-  async function loadAttendees(eventId) {
+  const loadAttendees = useCallback(async (eventId) => {
     try {
       const res = await fetch(
         `http://localhost:5001/api/events/${eventId}/solo-attendees`,
@@ -47,7 +43,12 @@ export default function GoingSoloButton({
       console.error(error);
       setError("Failed to load solo attendees");
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    if (!resolvedEventId || !token) return;
+    loadAttendees(resolvedEventId);
+  }, [loadAttendees, resolvedEventId, token]);
 
   async function ensureLocalEventId() {
     if (resolvedEventId) {
@@ -103,6 +104,7 @@ export default function GoingSoloButton({
       }
 
       await loadAttendees(eventId);
+      onStatusChange?.();
     } catch (error) {
       console.error(error);
       setError(error.message || "Failed to mark going solo");
@@ -138,6 +140,7 @@ export default function GoingSoloButton({
 
       await loadAttendees(resolvedEventId);
       setShowLeaveModal(false);
+      onStatusChange?.();
     } catch (error) {
       console.error(error);
       setError(error.message || "Failed to leave event");

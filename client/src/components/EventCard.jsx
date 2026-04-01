@@ -77,7 +77,7 @@ export default function EventCard({ event, refresh }) {
       </div>
       {user && (
         <div className="mt-4 space-y-3">
-          <GoingSoloButton localEventId={event._id} />
+          <GoingSoloButton localEventId={event._id} onStatusChange={refresh} />
 
           <div className="flex justify-end">
             {user?.username === owner?.username && (

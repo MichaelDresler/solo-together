@@ -13,6 +13,7 @@ import Discover from "./pages/Discover";
 import EventDetail from "./pages/EventDetail";
 import CreateEventPage from "./pages/CreateEventPage";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 
 const router = createBrowserRouter([
   {
@@ -54,6 +55,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         ),
       },
