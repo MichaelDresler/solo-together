@@ -34,6 +34,18 @@ function buildAvatarUrl(publicId, gravity = "face") {
   });
 }
 
+function buildEventImageUrl(publicId) {
+  return cloudinary.url(publicId, {
+    secure: true,
+    width: 1600,
+    height: 900,
+    crop: "fill",
+    gravity: "auto",
+    fetch_format: "auto",
+    quality: "auto:best",
+  });
+}
+
 export async function uploadAvatar(buffer, userId) {
   try {
     const result = await uploadBuffer(buffer, {
@@ -84,6 +96,32 @@ export async function uploadAvatar(buffer, userId) {
       avatarUrl: buildAvatarUrl(result.public_id, "auto"),
     };
   }
+}
+
+export async function uploadEventImage(buffer, userId) {
+  const result = await uploadBuffer(buffer, {
+    folder: "events",
+    public_id: `event-${userId}-${Date.now()}`,
+    resource_type: "image",
+    overwrite: false,
+    transformation: [
+      {
+        width: 1600,
+        height: 900,
+        crop: "fill",
+        gravity: "auto",
+      },
+      {
+        fetch_format: "auto",
+        quality: "auto:best",
+      },
+    ],
+  });
+
+  return {
+    imagePublicId: result.public_id,
+    imageUrl: buildEventImageUrl(result.public_id),
+  };
 }
 
 export async function deleteCloudinaryAsset(publicId) {

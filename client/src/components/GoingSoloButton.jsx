@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { createAuthHeaders, getApiUrl } from "../lib/api";
 import ConfirmationModal from "./ConfirmationModal";
 import SoloAttendeeSummary from "./SoloAttendeeSummary";
 
@@ -35,14 +36,9 @@ export default function GoingSoloButton({
 
   const loadAttendees = useCallback(async (eventId) => {
     try {
-      const res = await fetch(
-        `http://localhost:5001/api/events/${eventId}/solo-attendees`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const res = await fetch(getApiUrl(`/api/events/${eventId}/solo-attendees`), {
+        headers: createAuthHeaders(token),
+      });
 
       const data = await res.json();
 
@@ -60,9 +56,9 @@ export default function GoingSoloButton({
   }, [onAttendeesChange, token]);
 
   useEffect(() => {
-    if (!resolvedEventId || !token) return;
+    if (!resolvedEventId || !token || Array.isArray(attendeesProp)) return;
     loadAttendees(resolvedEventId);
-  }, [loadAttendees, resolvedEventId, token]);
+  }, [attendeesProp, loadAttendees, resolvedEventId, token]);
 
   async function ensureLocalEventId() {
     if (resolvedEventId) {
@@ -73,17 +69,13 @@ export default function GoingSoloButton({
       throw new Error("No local event id or import payload provided");
     }
 
-    const res = await fetch(
-      "http://localhost:5001/api/events/import-ticketmaster",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(importPayload),
-      },
-    );
+    const res = await fetch(getApiUrl("/api/events/import-ticketmaster"), {
+      method: "POST",
+      headers: createAuthHeaders(token, {
+        "Content-Type": "application/json",
+      }),
+      body: JSON.stringify(importPayload),
+    });
 
     const data = await res.json();
 
@@ -101,15 +93,10 @@ export default function GoingSoloButton({
 
     try {
       const eventId = await ensureLocalEventId();
-      const res = await fetch(
-        `http://localhost:5001/api/events/${eventId}/solo`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const res = await fetch(getApiUrl(`/api/events/${eventId}/solo`), {
+        method: "POST",
+        headers: createAuthHeaders(token),
+      });
 
       const data = await res.json();
 
@@ -136,15 +123,10 @@ export default function GoingSoloButton({
     setError("");
 
     try {
-      const res = await fetch(
-        `http://localhost:5001/api/events/${resolvedEventId}/solo`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const res = await fetch(getApiUrl(`/api/events/${resolvedEventId}/solo`), {
+        method: "DELETE",
+        headers: createAuthHeaders(token),
+      });
 
       const data = await res.json();
 

@@ -77,6 +77,11 @@ const eventSchema = new Schema(
       default: "",
       trim: true,
     },
+    imagePublicId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     externalUrl: {
       type: String,
       default: "",

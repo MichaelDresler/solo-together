@@ -1,9 +1,55 @@
 import express from "express";
+import multer from "multer";
 import Event from "../models/Event.js";
 import SoloAttendance from "../models/SoloAttendance.js";
 import auth from "../middleware/auth.js";
+import {
+  deleteCloudinaryAsset,
+  uploadEventImage,
+} from "../utils/cloudinary.js";
 
 const router = express.Router();
+const MAX_EVENT_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_EVENT_IMAGE_FILE_SIZE,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype?.startsWith("image/")) {
+      cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", "image"));
+      return;
+    }
+
+    cb(null, true);
+  },
+});
+
+function handleEventImageUpload(req, res, next) {
+  upload.single("image")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({
+          error: "Event banner must be 5MB or smaller.",
+        });
+      }
+
+      return res.status(400).json({
+        error: "Please upload a valid image file for your event banner.",
+      });
+    }
+
+    return res.status(400).json({
+      error: error.message || "Unable to process event banner upload.",
+    });
+  });
+}
 
 function normalizeEventPayload(payload) {
   return {
@@ -152,7 +198,9 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST create new event (protected)
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, handleEventImageUpload, async (req, res) => {
+  let uploadedEventImage = null;
+
   try {
     const normalizedEvent = normalizeEventPayload(req.body);
 
@@ -181,9 +229,15 @@ router.post("/", auth, async (req, res) => {
       });
     }
 
+    if (req.file) {
+      uploadedEventImage = await uploadEventImage(req.file.buffer, req.userId);
+      normalizedEvent.imageUrl = uploadedEventImage.imageUrl;
+    }
+
     const newEvent = await Event.create({
       source: "internal",
       ...normalizedEvent,
+      imagePublicId: uploadedEventImage?.imagePublicId || "",
       createdBy: req.userId,
       userId: req.userId,
     });
@@ -191,6 +245,15 @@ router.post("/", auth, async (req, res) => {
     return res.status(201).json(newEvent);
   } catch (e) {
     console.log(e);
+
+    if (uploadedEventImage?.imagePublicId) {
+      try {
+        await deleteCloudinaryAsset(uploadedEventImage.imagePublicId);
+      } catch (deleteError) {
+        console.log("failed to delete orphaned event image", deleteError);
+      }
+    }
+
     return res.status(500).json({ error: "server error" });
   }
 });

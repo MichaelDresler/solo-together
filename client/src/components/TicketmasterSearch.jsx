@@ -1,9 +1,11 @@
-import { useContext, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 import EventCard from "./EventCard";
 import EventDetailModal from "./EventDetailModal";
+
+const MODAL_TRANSITION_MS = 200;
 
 function buildImportPayload(event) {
   return {
@@ -58,11 +60,35 @@ export default function TicketmasterSearch() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState(null);
+  const [activeEventId, setActiveEventId] = useState(null);
   const [openingEventId, setOpeningEventId] = useState("");
+  const closeTimeoutRef = useRef(null);
+  const openFrameRef = useRef(null);
 
   const selectedEvent = useMemo(
     () => events.find((event) => event.externalId === selectedEventId) || null,
     [events, selectedEventId]
+  );
+  const activeEvent = useMemo(
+    () => events.find((event) => event.externalId === activeEventId) || null,
+    [activeEventId, events]
+  );
+  const activeEventIndex = useMemo(
+    () => events.findIndex((event) => event.externalId === activeEventId),
+    [activeEventId, events]
+  );
+
+  useEffect(
+    () => () => {
+      if (closeTimeoutRef.current) {
+        window.clearTimeout(closeTimeoutRef.current);
+      }
+
+      if (openFrameRef.current) {
+        window.cancelAnimationFrame(openFrameRef.current);
+      }
+    },
+    []
   );
 
   async function handleSubmit(event) {
@@ -167,6 +193,61 @@ export default function TicketmasterSearch() {
     );
   }
 
+  function handleOpen(externalId) {
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+
+    if (openFrameRef.current) {
+      window.cancelAnimationFrame(openFrameRef.current);
+    }
+
+    setActiveEventId(externalId);
+    openFrameRef.current = window.requestAnimationFrame(() => {
+      setSelectedEventId(externalId);
+      openFrameRef.current = null;
+    });
+  }
+
+  function handleClose() {
+    setSelectedEventId(null);
+
+    if (openFrameRef.current) {
+      window.cancelAnimationFrame(openFrameRef.current);
+      openFrameRef.current = null;
+    }
+
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current);
+    }
+
+    closeTimeoutRef.current = window.setTimeout(() => {
+      setActiveEventId(null);
+      closeTimeoutRef.current = null;
+    }, MODAL_TRANSITION_MS);
+  }
+
+  function handlePrevious() {
+    if (activeEventIndex <= 0) {
+      return;
+    }
+
+    const previousEvent = events[activeEventIndex - 1];
+    setActiveEventId(previousEvent.externalId);
+    setSelectedEventId(previousEvent.externalId);
+  }
+
+  function handleNext() {
+    if (activeEventIndex < 0 || activeEventIndex >= events.length - 1) {
+      return;
+    }
+
+    const nextEvent = events[activeEventIndex + 1];
+    setActiveEventId(nextEvent.externalId);
+    setSelectedEventId(nextEvent.externalId);
+  }
+
   return (
     <section className="space-y-4 rounded-xl border border-gray-200 p-6 shadow-sm">
       <form className="flex gap-3" onSubmit={handleSubmit}>
@@ -208,27 +289,31 @@ export default function TicketmasterSearch() {
           <EventCard
             key={event.externalId}
             event={event}
-            onOpen={() => setSelectedEventId(event.externalId)}
+            onOpen={() => handleOpen(event.externalId)}
           />
         ))}
       </div>
 
       <EventDetailModal
-        event={selectedEvent}
+        event={activeEvent}
         isOpen={Boolean(selectedEvent)}
-        onClose={() => setSelectedEventId(null)}
+        onClose={handleClose}
         refresh={async () => {}}
         token={token}
-        importPayload={selectedEvent ? buildImportPayload(selectedEvent) : null}
+        importPayload={activeEvent ? buildImportPayload(activeEvent) : null}
         onOpenEventPage={
-          selectedEvent ? () => openEventPage(selectedEvent) : null
+          activeEvent ? () => openEventPage(activeEvent) : null
         }
-        openingEventPage={openingEventId === selectedEvent?.externalId}
+        openingEventPage={openingEventId === activeEvent?.externalId}
         onAttendeesChange={
-          selectedEvent
-            ? (nextAttendees) => updateEventAttendance(selectedEvent.externalId, nextAttendees)
+          activeEvent
+            ? (nextAttendees) => updateEventAttendance(activeEvent.externalId, nextAttendees)
             : null
         }
+        onPrevious={handlePrevious}
+        onNext={handleNext}
+        hasPrevious={activeEventIndex > 0}
+        hasNext={activeEventIndex >= 0 && activeEventIndex < events.length - 1}
       />
     </section>
   );

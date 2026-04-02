@@ -95,7 +95,7 @@ export default function Nav() {
   }
 
   return (
-    <nav className="fixed top-0 z-40 flex w-full items-center justify-between border-b border-black/10 bg-white p-1 px-4">
+    <nav className="fixed top-0 z-40 flex w-full items-center justify-between border-b border-black/10 bg-white  px-4">
       <h1 className="flex w-full items-center text-2xl font-bold tracking-tight text-black">
         SoloTogether
       </h1>
@@ -121,7 +121,7 @@ export default function Nav() {
       <div className="flex w-full items-center justify-end gap-1.5">
         <Link
           to="/create-event"
-          className="inline-flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-stone-900 transition hover:text-[#CF5812]"
+          className="inline-flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-stone-900 transition hover:text-black"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -134,7 +134,7 @@ export default function Nav() {
               d="M7.25 3a.75.75 0 0 1 1.5 0v4.25H13a.75.75 0 0 1 0 1.5H8.75V13a.75.75 0 0 1-1.5 0V8.75H3a.75.75 0 0 1 0-1.5h4.25z"
             />
           </svg>
-          <span>Create Event</span>
+          <span className="tracking-tight text-black/60 hover:text-black duration-200">Create Event</span>
         </Link>
         <div className="relative" ref={menuRef}>
           <button

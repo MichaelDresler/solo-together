@@ -6,7 +6,7 @@ export default function EventCard({ event, onOpen }) {
     <button
       type="button"
       onClick={onOpen}
-      className="group overflow-hidden rounded-[1.75rem] border border-stone-200 bg-white text-left  transition duration-200 " 
+      className="group overflow-hidden rounded-2xl border border-black/8 bg-white text-left  transition duration-200 cursor-pointer hover:bg-white/20" 
     >
       {event.imageUrl ? (
         <div className="overflow-hidden">
@@ -24,7 +24,7 @@ export default function EventCard({ event, onOpen }) {
 
       <div className="space-y-3 px-5 py-4">
         <p className="text-sm font-medium text-stone-500">{formatEventStart(event.startDate)}</p>
-        <h3 className="text-[1.35rem] font-semibold tracking-tight text-stone-950">
+        <h3 className="text-[1.25rem] font-semibold tracking-tight text-stone-950">
           {event.title || "Untitled event"}
         </h3>
         <p className="text-sm text-stone-500">{formatEventLocation(event)}</p>
