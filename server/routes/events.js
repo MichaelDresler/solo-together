@@ -79,6 +79,41 @@ async function findOrCreateTicketmasterEvent(payload) {
   );
 }
 
+async function attachSoloAttendanceSummary(events) {
+  const eventIds = events.map((event) => event._id);
+
+  if (eventIds.length === 0) {
+    return events;
+  }
+
+  const attendances = await SoloAttendance.find({
+    eventId: { $in: eventIds },
+    status: "going_solo",
+  })
+    .populate("userId", "username firstName lastName avatarUrl")
+    .sort({ createdAt: -1 });
+
+  const attendeeMap = new Map();
+
+  attendances.forEach((attendance) => {
+    const eventId = attendance.eventId.toString();
+    const currentAttendees = attendeeMap.get(eventId) || [];
+    currentAttendees.push(attendance.userId);
+    attendeeMap.set(eventId, currentAttendees);
+  });
+
+  return events.map((event) => {
+    const eventObject = event.toObject();
+    const eventAttendees = attendeeMap.get(event._id.toString()) || [];
+
+    return {
+      ...eventObject,
+      soloPreviewUsers: eventAttendees.slice(0, 3),
+      soloAttendeeCount: eventAttendees.length,
+    };
+  });
+}
+
 // GET all events
 router.get("/", async (req, res) => {
   try {
@@ -87,7 +122,9 @@ router.get("/", async (req, res) => {
       .populate("userId", "username firstName lastName avatarUrl")
       .sort({ createdAt: -1 });
 
-    return res.json(events);
+    const eventsWithAttendance = await attachSoloAttendanceSummary(events);
+
+    return res.json(eventsWithAttendance);
   } catch (e) {
     console.log(e);
     return res.status(500).json({ error: "server error" });
@@ -105,7 +142,9 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "event not found" });
     }
 
-    return res.json(event);
+    const [eventWithAttendance] = await attachSoloAttendanceSummary([event]);
+
+    return res.json(eventWithAttendance);
   } catch (e) {
     console.log(e);
     return res.status(500).json({ error: "server error" });

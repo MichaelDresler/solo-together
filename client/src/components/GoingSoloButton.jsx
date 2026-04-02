@@ -2,12 +2,17 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import ConfirmationModal from "./ConfirmationModal";
-import UserAvatar from "./UserAvatar";
+import SoloAttendeeSummary from "./SoloAttendeeSummary";
 
 export default function GoingSoloButton({
   localEventId = null,
   importPayload = null,
   onStatusChange,
+  onAttendeesChange,
+  attendees: attendeesProp = null,
+  attendeeCount: attendeeCountProp = null,
+  showAttendeeSummary = true,
+  showOpenEventPage = true,
 }) {
   const { token, user } = useContext(AuthContext);
   const [resolvedEventId, setResolvedEventId] = useState(localEventId);
@@ -19,6 +24,14 @@ export default function GoingSoloButton({
   useEffect(() => {
     setResolvedEventId(localEventId);
   }, [localEventId]);
+
+  useEffect(() => {
+    if (!Array.isArray(attendeesProp)) {
+      return;
+    }
+
+    setAttendees(attendeesProp.map((person) => ({ userId: person })));
+  }, [attendeesProp]);
 
   const loadAttendees = useCallback(async (eventId) => {
     try {
@@ -39,11 +52,12 @@ export default function GoingSoloButton({
       }
 
       setAttendees(data);
+      onAttendeesChange?.(data.map((entry) => entry.userId).filter(Boolean));
     } catch (error) {
       console.error(error);
       setError("Failed to load solo attendees");
     }
-  }, [token]);
+  }, [onAttendeesChange, token]);
 
   useEffect(() => {
     if (!resolvedEventId || !token) return;
@@ -153,6 +167,8 @@ export default function GoingSoloButton({
   const isGoingSolo = attendees.some(
     (attendee) => attendee.userId?._id === currentUserId,
   );
+  const attendeeUsers = attendees.map((attendee) => attendee.userId).filter(Boolean);
+  const attendeeCount = attendeeCountProp ?? attendeeUsers.length;
 
   return (
     <>
@@ -175,7 +191,7 @@ export default function GoingSoloButton({
                 : "Going Solo"}
           </button>
 
-          {resolvedEventId && (
+          {resolvedEventId && showOpenEventPage && (
             <Link
               to={`/events/${resolvedEventId}`}
               className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
@@ -187,27 +203,9 @@ export default function GoingSoloButton({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {resolvedEventId && (
+        {resolvedEventId && showAttendeeSummary && (
           <div className="space-y-1 text-sm text-gray-600">
-            {attendees.length > 0 && (
-              <div className="flex  -space-x-3  ">
-
-                {attendees.map((person) => (
-                  <UserAvatar
-                  
-                    key={person.userId?._id}
-                    user={person.userId}
-                    size={32}
-                    className={`h-8 w-8 border-white border relative`}
-                  />
-                ))}
-              </div>
-            )}
-
-            <p>
-              {attendees.length } {attendees.length === 1 ? "person" : "people"}{" "}
-              going solo
-            </p>
+            <SoloAttendeeSummary attendees={attendeeUsers} count={attendeeCount} />
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
+import DateTimeDropdownField from "./DateTimeDropdownField";
 
 const initialFormValues = {
   title: "",
@@ -19,10 +20,34 @@ const initialFormValues = {
   classification: "",
 };
 
+const initialDateTimeSelections = {
+  start: {
+    date: "",
+    time: "",
+  },
+  end: {
+    date: "",
+    time: "",
+  },
+};
+
+function buildDateTimeValue(date, time) {
+  if (!date) {
+    return "";
+  }
+
+  if (!time) {
+    return date;
+  }
+
+  return `${date}T${time}`;
+}
+
 export default function CreateEvent() {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState(initialFormValues);
+  const [dateTimeSelections, setDateTimeSelections] = useState(initialDateTimeSelections);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -33,6 +58,25 @@ export default function CreateEvent() {
       ...currentValues,
       [name]: value,
     }));
+  }
+
+  function handleDateTimeSelection(field, part, value) {
+    setDateTimeSelections((currentSelections) => {
+      const nextFieldSelection = {
+        ...currentSelections[field],
+        [part]: value,
+      };
+
+      setFormValues((currentValues) => ({
+        ...currentValues,
+        [`${field}Date`]: buildDateTimeValue(nextFieldSelection.date, nextFieldSelection.time),
+      }));
+
+      return {
+        ...currentSelections,
+        [field]: nextFieldSelection,
+      };
+    });
   }
 
   async function handleSubmit(event) {
@@ -124,28 +168,22 @@ export default function CreateEvent() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 md:col-span-2">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Start</span>
-            <input
-              type="datetime-local"
-              name="startDate"
-              value={formValues.startDate}
-              onChange={handleChange}
-              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            />
-          </label>
+        <div className="grid gap-4 md:col-span-2">
+          <DateTimeDropdownField
+            label="Start"
+            dateValue={dateTimeSelections.start.date}
+            timeValue={dateTimeSelections.start.time}
+            onDateChange={(value) => handleDateTimeSelection("start", "date", value)}
+            onTimeChange={(value) => handleDateTimeSelection("start", "time", value)}
+          />
 
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">End</span>
-            <input
-              type="datetime-local"
-              name="endDate"
-              value={formValues.endDate}
-              onChange={handleChange}
-              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            />
-          </label>
+          <DateTimeDropdownField
+            label="End"
+            dateValue={dateTimeSelections.end.date}
+            timeValue={dateTimeSelections.end.time}
+            onDateChange={(value) => handleDateTimeSelection("end", "date", value)}
+            onTimeChange={(value) => handleDateTimeSelection("end", "time", value)}
+          />
         </div>
       </section>
 

@@ -1,6 +1,65 @@
 import express from "express";
+import Event from "../models/Event.js";
+import SoloAttendance from "../models/SoloAttendance.js";
 
 const router = express.Router();
+
+async function attachLocalEventData(events) {
+  const externalIds = events.map((event) => event.id).filter(Boolean);
+
+  if (externalIds.length === 0) {
+    return events;
+  }
+
+  const localEvents = await Event.find({
+    externalSource: "ticketmaster",
+    externalId: { $in: externalIds },
+  })
+    .populate("createdBy", "username firstName lastName avatarUrl")
+    .populate("userId", "username firstName lastName avatarUrl");
+
+  const localEventMap = new Map(localEvents.map((event) => [event.externalId, event]));
+  const localEventIds = localEvents.map((event) => event._id);
+
+  const attendances = await SoloAttendance.find({
+    eventId: { $in: localEventIds },
+    status: "going_solo",
+  })
+    .populate("userId", "username firstName lastName avatarUrl")
+    .sort({ createdAt: -1 });
+
+  const attendeeMap = new Map();
+
+  attendances.forEach((attendance) => {
+    const eventId = attendance.eventId.toString();
+    const currentAttendees = attendeeMap.get(eventId) || [];
+    currentAttendees.push(attendance.userId);
+    attendeeMap.set(eventId, currentAttendees);
+  });
+
+  return events.map((event) => {
+    const localEvent = localEventMap.get(event.id);
+
+    if (!localEvent) {
+      return {
+        ...event,
+        soloPreviewUsers: [],
+        soloAttendeeCount: 0,
+      };
+    }
+
+    const eventAttendees = attendeeMap.get(localEvent._id.toString()) || [];
+
+    return {
+      ...event,
+      _id: localEvent._id,
+      createdBy: localEvent.createdBy,
+      userId: localEvent.userId,
+      soloPreviewUsers: eventAttendees.slice(0, 3),
+      soloAttendeeCount: eventAttendees.length,
+    };
+  });
+}
 
 router.get("/events", async (req, res) => {
   const apiKey = process.env.TICKETMASTER_API_KEY;
@@ -34,7 +93,7 @@ router.get("/events", async (req, res) => {
       return res.status(ticketmasterRes.status).json({ error: apiError });
     }
 
-    const events = (data?._embedded?.events || []).map((event) => {
+    const rawEvents = (data?._embedded?.events || []).map((event) => {
       const venue = event?._embedded?.venues?.[0];
       const image = event.images?.[0];
       const classification = event.classifications?.[0];
@@ -66,6 +125,8 @@ router.get("/events", async (req, res) => {
           "",
       };
     });
+
+    const events = await attachLocalEventData(rawEvents);
 
     return res.json({ events });
   } catch (error) {
