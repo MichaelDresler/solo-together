@@ -1,11 +1,10 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import EventList from "../components/EventList";
 import TicketmasterSearch from "../components/TicketmasterSearch";
 
 export default function Discover() {
-  const { user, token } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
   const [err, setErr] = useState("");
   const [events, setEvents] = useState([]);
 
@@ -87,14 +86,6 @@ export default function Discover() {
 
       <TicketmasterSearch />
 
-      {user && (
-        <Link
-          to="/create-event"
-          className="inline-flex items-center rounded-xl bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800"
-        >
-          Create Event
-        </Link>
-      )}
       <h1 className="text-3xl font-bold capitalize">Discover new events</h1>
       <h2 className="pb-12">Explore popular events near you, browse by category, or check out some of the great community calendars.</h2>
       <div className="flex gap-4">

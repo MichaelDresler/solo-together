@@ -118,7 +118,24 @@ export default function Nav() {
         ))}
       </ul>
 
-      <div className="flex w-full items-center justify-end">
+      <div className="flex w-full items-center justify-end gap-1.5">
+        <Link
+          to="/create-event"
+          className="inline-flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-stone-900 transition hover:text-[#CF5812]"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 16"
+            className="size-4"
+            aria-hidden="true"
+          >
+            <path
+              fill="currentColor"
+              d="M7.25 3a.75.75 0 0 1 1.5 0v4.25H13a.75.75 0 0 1 0 1.5H8.75V13a.75.75 0 0 1-1.5 0V8.75H3a.75.75 0 0 1 0-1.5h4.25z"
+            />
+          </svg>
+          <span>Create Event</span>
+        </Link>
         <div className="relative" ref={menuRef}>
           <button
             type="button"
