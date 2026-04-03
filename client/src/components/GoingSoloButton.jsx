@@ -14,6 +14,7 @@ export default function GoingSoloButton({
   attendeeCount: attendeeCountProp = null,
   showAttendeeSummary = true,
   showOpenEventPage = true,
+  fullWidth = false,
 }) {
   const { token, user } = useContext(AuthContext);
   const [resolvedEventId, setResolvedEventId] = useState(localEventId);
@@ -154,15 +155,15 @@ export default function GoingSoloButton({
 
   return (
     <>
-      <div className="space-y-2 justify-between ">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="space-y-2">
+        <div className={`flex gap-2 ${fullWidth ? "flex-col" : "flex-wrap items-center"}`}>
           <button
             type="button"
             onClick={
               isGoingSolo ? () => setShowLeaveModal(true) : handleGoingSolo
             }
             disabled={loading}
-            className={` ${!isGoingSolo ? "bg-black" : "bg-red-700"} inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed `}
+            className={`${!isGoingSolo ? "bg-black" : "bg-red-700"} inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed ${fullWidth ? "w-full" : ""}`}
           >
             {loading
               ? isGoingSolo
@@ -176,7 +177,7 @@ export default function GoingSoloButton({
           {resolvedEventId && showOpenEventPage && (
             <Link
               to={`/events/${resolvedEventId}`}
-              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+              className={`inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 ${fullWidth ? "w-full" : ""}`}
             >
               Open Event Page
             </Link>

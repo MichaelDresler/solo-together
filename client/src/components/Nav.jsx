@@ -3,8 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import UserAvatar from "./UserAvatar";
 import { getUserDisplayName } from "../utils/avatar";
+import { canManageMembers } from "../lib/permissions";
 
-export default function Nav() {
+export default function Nav({ onOpenSearch }) {
   const { pathname } = useLocation();
   const slicedPathname = "/" + pathname.split("/")[1];
   const { user, logout } = useContext(AuthContext);
@@ -13,6 +14,7 @@ export default function Nav() {
 
   const isEventsPage = slicedPathname === "/discover";
   const isAuthenticated = !!user;
+  const showAdminLink = canManageMembers(user);
 
   const authenticatedRoutes = [
     { name: "Dashboard", link: "/dashboard" },
@@ -116,6 +118,32 @@ export default function Nav() {
             </Link>
           </li>
         ))}
+        <li className="flex text-sm text-black/60">
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className={`flex flex-row items-center justify-center gap-1 rounded-md p-2.5 text-center font-bold tracking-tight transition hover:text-black ${
+              slicedPathname === "/search" ? "text-[#CF5812]" : "text-black/60"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="size-4"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m21 21-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0a7 7 0 0 1 14 0Z"
+              />
+            </svg>
+            Search
+          </button>
+        </li>
       </ul>
 
       <div className="flex w-full items-center justify-end gap-1.5">
@@ -181,17 +209,26 @@ export default function Nav() {
               <Link
                 to="/profile"
                 onClick={() => setIsMenuOpen(false)}
-                className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100 hover:text-stone-900"
+                className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
               >
                 View profile
               </Link>
               <Link
                 to="/settings"
                 onClick={() => setIsMenuOpen(false)}
-                className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100 hover:text-stone-900"
+                className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
               >
                 Settings
               </Link>
+              {showAdminLink ? (
+                <Link
+                  to="/admin/members"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                >
+                  Admin
+                </Link>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {

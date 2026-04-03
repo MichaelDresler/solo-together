@@ -26,8 +26,18 @@ const UserSchema = new Schema({
     avatarPublicId: {
         type: String,
         default: "",
-    }
+    },
+    role: {
+        type: String,
+        enum: ["member", "admin", "super_admin"],
+        default: "member",
+    },
+    status: {
+        type: String,
+        enum: ["active", "suspended"],
+        default: "active",
+    },
 
-})
+}, { timestamps: true })
 
 export default model("User", UserSchema)

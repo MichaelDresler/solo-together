@@ -4,6 +4,7 @@ import auth from "../middleware/auth.js";
 import Event from "../models/Event.js";
 import SoloAttendance from "../models/SoloAttendance.js";
 import User from "../models/User.js";
+import { attachSoloAttendanceSummary } from "../utils/eventAttendance.js";
 import { deleteCloudinaryAsset, uploadAvatar } from "../utils/cloudinary.js";
 import { serializeUserProfile } from "../utils/profile.js";
 
@@ -94,11 +95,29 @@ router.get("/me/events", auth, async (req, res) => {
         .sort({ createdAt: -1 }),
     ]);
 
-    const attendingEvents = attendances
+    const rawSoloingEvents = attendances
       .map((attendance) => attendance.eventId)
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((event) => {
+        const ownerId =
+          event.createdBy?._id?.toString() ||
+          event.createdBy?.toString() ||
+          event.userId?._id?.toString() ||
+          event.userId?.toString() ||
+          null;
 
-    return res.json({ createdEvents, attendingEvents });
+        return ownerId !== req.userId;
+      });
+
+    const [createdEventsWithAttendance, soloingEvents] = await Promise.all([
+      attachSoloAttendanceSummary(createdEvents),
+      attachSoloAttendanceSummary(rawSoloingEvents),
+    ]);
+
+    return res.json({
+      createdEvents: createdEventsWithAttendance,
+      soloingEvents,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: "server error" });

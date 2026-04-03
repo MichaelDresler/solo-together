@@ -1,7 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import EventList from "../components/EventList";
-import TicketmasterSearch from "../components/TicketmasterSearch";
 
 export default function Discover() {
   const { token } = useContext(AuthContext);
@@ -80,14 +79,11 @@ export default function Discover() {
   }, [events, sortBy, filterByUser]);
 
   return (
-    <main className="px-6 max-w-[1000px] mx-auto  w-full">
-
+    <main className="px-6 max-w-250 mx-auto  w-full">
       {err && <p className="text-red-600">{err}</p>}
 
-      <TicketmasterSearch />
-
       <h1 className="text-3xl font-bold capitalize">Discover new events</h1>
-      <h2 className="pb-12">Explore popular events near you, browse by category, or check out some of the great community calendars.</h2>
+      <h2 className="pb-12 text-black/60">Explore popular events near you, browse by category, or check out some of the great community calendars.</h2>
       <div className="flex gap-4">
         <div className="flex flex-col">
           <label htmlFor="sort">Sort</label>

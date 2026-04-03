@@ -17,3 +17,7 @@
 html {
   overflow-y: scroll;
 }
+
+@utility squircle {
+  corner-shape: squircle;
+}

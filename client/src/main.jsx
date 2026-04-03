@@ -14,6 +14,9 @@ import EventDetail from "./pages/EventDetail";
 import CreateEventPage from "./pages/CreateEventPage";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import SearchResults from "./pages/SearchResults";
+import EditEventPage from "./pages/EditEventPage";
+import AdminMembers from "./pages/AdminMembers";
 
 const router = createBrowserRouter([
   // 🔓 Public routes (NO RootLayout)
@@ -47,6 +50,22 @@ const router = createBrowserRouter([
         element: <EventDetail />,
       },
       {
+        path: "events/:id/edit",
+        element: (
+          <ProtectedRoute>
+            <EditEventPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "search",
+        element: (
+          <ProtectedRoute>
+            <SearchResults />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "create-event",
         element: (
           <ProtectedRoute>
@@ -67,6 +86,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/members",
+        element: (
+          <ProtectedRoute>
+            <AdminMembers />
           </ProtectedRoute>
         ),
       },

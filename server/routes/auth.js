@@ -28,11 +28,13 @@ router.post("/register", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const hasExistingUsers = (await User.estimatedDocumentCount()) > 0;
     const newUser = await User.create({
       username: username.toLowerCase(),
       hashedPassword,
       firstName,
       lastName,
+      role: hasExistingUsers ? "member" : "super_admin",
     });
     console.log(`new user created: ${newUser}`);
 
@@ -44,14 +46,7 @@ router.post("/register", async (req, res) => {
 
     return res.status(201).json({
       token,
-      user: {
-        _id: newUser._id,
-        id: newUser._id,
-        username: newUser.username,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        avatarUrl: newUser.avatarUrl || "",
-      },
+      user: serializeUserProfile(newUser),
     });
   } catch (e) {
     console.log(e);
@@ -72,6 +67,9 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ username:normalizedUsername });
     // validation
     if (!user) return res.status(404).json({ error: "no such user exists" });
+    if (user.status === "suspended") {
+      return res.status(403).json({ error: "account is suspended" });
+    }
 
     // validation
     const passwordMatches = await bcrypt.compare(password, user.hashedPassword);
@@ -86,14 +84,7 @@ router.post("/login", async (req, res) => {
 
     res.status(200).json({
       token,
-      user: {
-        _id: user._id,
-        id: user._id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        avatarUrl: user.avatarUrl || "",
-      },
+      user: serializeUserProfile(user),
     });
   } catch (e) {
     console.log(e);

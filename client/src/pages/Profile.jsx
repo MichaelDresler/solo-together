@@ -37,7 +37,7 @@ function sortEvents(events) {
 export default function Profile() {
   const { token, user } = useContext(AuthContext);
   const [createdEvents, setCreatedEvents] = useState([]);
-  const [attendingEvents, setAttendingEvents] = useState([]);
+  const [soloingEvents, setSoloingEvents] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [error, setError] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
@@ -66,7 +66,7 @@ export default function Profile() {
         if (!isActive) return;
 
         setCreatedEvents(sortEvents(data.createdEvents || []));
-        setAttendingEvents(sortEvents(data.attendingEvents || []));
+        setSoloingEvents(sortEvents(data.soloingEvents || []));
       } catch (fetchError) {
         if (!isActive) return;
         setError(fetchError.message || "Failed to load profile.");
@@ -149,15 +149,15 @@ export default function Profile() {
           <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
             <div className="space-y-1">
               <h2 className="text-xl font-semibold text-stone-900">
-                Events You&apos;re Going Solo To
+                Events You&apos;re Soloing
               </h2>
               <p className="text-sm text-stone-600">
                 These are the events you have joined as a solo attendee.
               </p>
             </div>
 
-            {attendingEvents.length > 0 ? (
-              <EventList events={attendingEvents} refresh={refreshProfileEvents} />
+            {soloingEvents.length > 0 ? (
+              <EventList events={soloingEvents} refresh={refreshProfileEvents} />
             ) : (
               <p className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-6 text-sm text-stone-600">
                 You are not marked as going solo to any events yet.

@@ -3,6 +3,7 @@ import multer from "multer";
 import Event from "../models/Event.js";
 import SoloAttendance from "../models/SoloAttendance.js";
 import auth from "../middleware/auth.js";
+import { attachSoloAttendanceSummary } from "../utils/eventAttendance.js";
 import {
   deleteCloudinaryAsset,
   uploadEventImage,
@@ -73,6 +74,22 @@ function isValidDate(value) {
   return value instanceof Date && Number.isFinite(value.valueOf());
 }
 
+function getEventOwnerId(event) {
+  return event.createdBy?.toString() || event.userId?.toString() || null;
+}
+
+function canManageEvent(user, event) {
+  if (!user || !event) {
+    return false;
+  }
+
+  if (["admin", "super_admin"].includes(user.role)) {
+    return true;
+  }
+
+  return getEventOwnerId(event) === user._id.toString();
+}
+
 async function findOrCreateTicketmasterEvent(payload) {
   const {
     externalId,
@@ -123,41 +140,6 @@ async function findOrCreateTicketmasterEvent(payload) {
       setDefaultsOnInsert: true,
     }
   );
-}
-
-async function attachSoloAttendanceSummary(events) {
-  const eventIds = events.map((event) => event._id);
-
-  if (eventIds.length === 0) {
-    return events;
-  }
-
-  const attendances = await SoloAttendance.find({
-    eventId: { $in: eventIds },
-    status: "going_solo",
-  })
-    .populate("userId", "username firstName lastName avatarUrl")
-    .sort({ createdAt: -1 });
-
-  const attendeeMap = new Map();
-
-  attendances.forEach((attendance) => {
-    const eventId = attendance.eventId.toString();
-    const currentAttendees = attendeeMap.get(eventId) || [];
-    currentAttendees.push(attendance.userId);
-    attendeeMap.set(eventId, currentAttendees);
-  });
-
-  return events.map((event) => {
-    const eventObject = event.toObject();
-    const eventAttendees = attendeeMap.get(event._id.toString()) || [];
-
-    return {
-      ...eventObject,
-      soloPreviewUsers: eventAttendees.slice(0, 3),
-      soloAttendeeCount: eventAttendees.length,
-    };
-  });
 }
 
 // GET all events
@@ -243,6 +225,95 @@ router.post("/", auth, handleEventImageUpload, async (req, res) => {
     });
 
     return res.status(201).json(newEvent);
+  } catch (e) {
+    console.log(e);
+
+    if (uploadedEventImage?.imagePublicId) {
+      try {
+        await deleteCloudinaryAsset(uploadedEventImage.imagePublicId);
+      } catch (deleteError) {
+        console.log("failed to delete orphaned event image", deleteError);
+      }
+    }
+
+    return res.status(500).json({ error: "server error" });
+  }
+});
+
+router.patch("/:id", auth, handleEventImageUpload, async (req, res) => {
+  let uploadedEventImage = null;
+
+  try {
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+      return res.status(404).json({ error: "event not found" });
+    }
+
+    if (!canManageEvent(req.user, event)) {
+      return res.status(403).json({ error: "not authorized to update this event" });
+    }
+
+    const normalizedEvent = normalizeEventPayload(req.body);
+
+    if (!normalizedEvent.title) {
+      return res.status(400).json({ error: "title is required" });
+    }
+
+    if (
+      (normalizedEvent.startDate && !isValidDate(normalizedEvent.startDate)) ||
+      (normalizedEvent.endDate && !isValidDate(normalizedEvent.endDate))
+    ) {
+      return res.status(400).json({
+        error: "please provide valid start and end dates",
+      });
+    }
+
+    if (
+      normalizedEvent.startDate &&
+      normalizedEvent.endDate &&
+      isValidDate(normalizedEvent.startDate) &&
+      isValidDate(normalizedEvent.endDate) &&
+      normalizedEvent.endDate < normalizedEvent.startDate
+    ) {
+      return res.status(400).json({
+        error: "end date must be after the start date",
+      });
+    }
+
+    if (req.file) {
+      uploadedEventImage = await uploadEventImage(req.file.buffer, req.userId);
+      normalizedEvent.imageUrl = uploadedEventImage.imageUrl;
+      normalizedEvent.imagePublicId = uploadedEventImage.imagePublicId;
+    }
+
+    const previousImagePublicId = event.imagePublicId;
+
+    Object.assign(event, normalizedEvent);
+
+    if (uploadedEventImage?.imagePublicId) {
+      event.imagePublicId = uploadedEventImage.imagePublicId;
+    }
+
+    await event.save();
+
+    if (
+      uploadedEventImage?.imagePublicId &&
+      previousImagePublicId &&
+      previousImagePublicId !== uploadedEventImage.imagePublicId
+    ) {
+      try {
+        await deleteCloudinaryAsset(previousImagePublicId);
+      } catch (deleteError) {
+        console.log("failed to delete replaced event image", deleteError);
+      }
+    }
+
+    const populatedEvent = await Event.findById(event._id)
+      .populate("createdBy", "username firstName lastName avatarUrl")
+      .populate("userId", "username firstName lastName avatarUrl");
+
+    return res.json(populatedEvent);
   } catch (e) {
     console.log(e);
 
@@ -387,15 +458,22 @@ router.delete("/:id", auth, async (req, res) => {
     }
 
     // make sure users can only delete their own events
-    const ownerId = event.createdBy?.toString() || event.userId?.toString();
-
-    if (ownerId !== req.userId) {
+    if (!canManageEvent(req.user, event)) {
       return res
         .status(403)
         .json({ error: "not authorized to delete this event" });
     }
 
+    if (event.imagePublicId) {
+      try {
+        await deleteCloudinaryAsset(event.imagePublicId);
+      } catch (deleteError) {
+        console.log("failed to delete event image", deleteError);
+      }
+    }
+
     await Event.findByIdAndDelete(req.params.id);
+    await SoloAttendance.deleteMany({ eventId: req.params.id });
 
     return res.json({ message: "event deleted successfully" });
   } catch (e) {

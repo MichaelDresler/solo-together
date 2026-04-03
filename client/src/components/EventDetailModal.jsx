@@ -1,10 +1,50 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { formatEventDateTimeDetail, formatEventLocation } from "../utils/eventFormatting";
+import {
+  formatEventDateRangeDetail,
+  formatEventLocation,
+} from "../utils/eventFormatting";
 import { getUserDisplayName } from "../utils/avatar";
 import SoloAttendeeSummary from "./SoloAttendeeSummary";
 import GoingSoloButton from "./GoingSoloButton";
 import UserAvatar from "./UserAvatar";
+import EventSettingsMenu from "./EventSettingsMenu";
+
+function CalendarIcon({ className = "size-12" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18h-10.5A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Z" />
+      <path
+        fill="#fff"
+        d="M3.5 8h13v7.25c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25V8Z"
+      />
+    </svg>
+  );
+}
+
+function PinIcon({ className = "size-12" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M10 1.75a5.75 5.75 0 0 0-5.75 5.75c0 4.23 4.6 8.93 5.13 9.45a.9.9 0 0 0 1.24 0c.53-.52 5.13-5.22 5.13-9.45A5.75 5.75 0 0 0 10 1.75Zm0 7.75a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
 
 export default function EventDetailModal({
   event,
@@ -13,16 +53,17 @@ export default function EventDetailModal({
   refresh,
   token,
   importPayload = null,
-  onOpenEventPage = null,
-  openingEventPage = false,
   onAttendeesChange = null,
   onPrevious = null,
   onNext = null,
   hasPrevious = false,
   hasNext = false,
 }) {
-  const [attendees, setAttendees] = useState(event?.soloPreviewUsers || []);
-  const [attendeeCount, setAttendeeCount] = useState(event?.soloAttendeeCount || 0);
+  const [attendeeState, setAttendeeState] = useState({
+    eventKey: event?._id || event?.externalId || null,
+    attendees: event?.soloPreviewUsers || [],
+    attendeeCount: event?.soloAttendeeCount || 0,
+  });
   const scrollContainerRef = useRef(null);
 
   useEffect(() => {
@@ -62,17 +103,6 @@ export default function EventDetailModal({
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (!event) {
-      setAttendees([]);
-      setAttendeeCount(0);
-      return;
-    }
-
-    setAttendees(event.soloPreviewUsers || []);
-    setAttendeeCount(event.soloAttendeeCount || 0);
-  }, [event]);
-
-  useEffect(() => {
     if (isOpen) {
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: "auto" });
     }
@@ -83,16 +113,20 @@ export default function EventDetailModal({
   }
 
   const owner = event.createdBy || event.userId;
-  const eventPageButton = onOpenEventPage ? (
-    <button
-      type="button"
-      onClick={onOpenEventPage}
-      disabled={openingEventPage}
-      className="inline-flex h-9 items-center justify-center rounded-[0.1rem] border border-red-900/80 bg-white px-3.5 text-sm font-semibold text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {openingEventPage ? "Opening..." : "Open Event Page"}
-    </button>
-  ) : event._id ? (
+  const eventKey = event._id || event.externalId || null;
+  const usingLocalAttendees = attendeeState.eventKey === eventKey;
+  const attendees = usingLocalAttendees
+    ? attendeeState.attendees
+    : event.soloPreviewUsers || [];
+  const attendeeCount = usingLocalAttendees
+    ? attendeeState.attendeeCount
+    : event.soloAttendeeCount || 0;
+  const dateTimeLabel = formatEventDateRangeDetail(
+    event.startDate,
+    event.endDate,
+  );
+  const locationLabel = formatEventLocation(event);
+  const eventPageButton = event._id ? (
     <Link
       to={`/events/${event._id}`}
       className="inline-flex h-9 items-center justify-center  rounded-[0.8rem] border border-stone-300/80 bg-white px-3.5 text-sm font-semibold text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-950"
@@ -120,8 +154,10 @@ export default function EventDetailModal({
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem]  bg-stone-100 shadow-[0_30px_100px_rgba(15,23,42,0.32)] transition-all duration-200 ${
-          isOpen ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0"
+        className={`relative z-10 flex max-h-[97vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl  bg-stone-100 shadow-[0_30px_100px_rgba(15,23,42,0.32)] transition-all duration-200 ${
+          isOpen
+            ? "translate-y-0 scale-100 opacity-100"
+            : "translate-y-2 scale-95 opacity-0"
         }`}
       >
         <div className="flex items-center justify-between gap-3 border-b border-stone-200 bg-stone-100/95 px-4 py-3 backdrop-blur-sm">
@@ -129,7 +165,7 @@ export default function EventDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex size-9 items-center justify-center rounded-[1rem] border border-stone-300/80 bg-stone-50 text-stone-700 transition hover:border-stone-400 hover:bg-white hover:text-stone-950"
+              className="inline-flex size-9 items-center justify-center squircle rounded-full border border-stone-300/80 bg-stone-50 text-stone-700 transition hover:border-stone-400 hover:bg-white hover:text-stone-950"
               aria-label="Close event details"
             >
               <svg
@@ -148,6 +184,14 @@ export default function EventDetailModal({
           </div>
 
           <div className="flex items-center gap-2">
+            <EventSettingsMenu
+              event={event}
+              onBeforeNavigate={onClose}
+              onDeleted={() => {
+                onClose();
+                refresh?.();
+              }}
+            />
             <button
               type="button"
               onClick={onPrevious}
@@ -193,8 +237,11 @@ export default function EventDetailModal({
           </div>
         </div>
 
-        <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto bg-white">
-          <div className="relative">
+        <div
+          ref={scrollContainerRef}
+          className="min-h-0 flex-1 overflow-y-auto bg-white"
+        >
+          <div className="">
             {event.imageUrl ? (
               <img
                 src={event.imageUrl}
@@ -210,20 +257,46 @@ export default function EventDetailModal({
 
           <div className="px-6 py-6 md:px-8">
             <div className="space-y-6">
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-stone-500">
-                  {formatEventDateTimeDetail(event.startDate)}
-                </p>
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-semibold tracking-tight text-stone-950">
-                    {event.title || "Untitled event"}
-                  </h2>
-                  <p className="text-base text-stone-600">{formatEventLocation(event)}</p>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-semibold tracking-tight text-stone-950">
+                  {event.title || "Untitled event"}
+                </h2>
+                <div>
+                  {owner ? (
+                    <div className="mt-3 flex items-center gap-2">
+                      <UserAvatar
+                        user={owner}
+                        size={24}
+                        className="h-10 w-10"
+                        textClassName="text-xs"
+                      />
+                      <div>
+                        <p className="text-base font-medium text-black/60">
+                          {getUserDisplayName(owner)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-stone-500">
+                      Host unavailable
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="flex flex-col gap-6 border-t border-stone-200 pt-6">
                 <div className="space-y-5">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-sm text-stone-700">
+                      <CalendarIcon className="mt-0.5 size-8 shrink-0 text-stone-500" />
+                      <p>{dateTimeLabel}</p>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-stone-700">
+                      <PinIcon className="mt-0.5 size-8 shrink-0 text-stone-500" />
+                      <p>{locationLabel}</p>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <p className="text-sm font-semibold  text-stone-400">
                       About
@@ -232,53 +305,18 @@ export default function EventDetailModal({
                       {event.description || "No description available yet."}
                     </p>
                   </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-stone-50 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-                        Start
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-stone-800">
-                        {formatEventDateTimeDetail(event.startDate)}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-stone-50 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-                        End
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-stone-800">
-                        {formatEventDateTimeDetail(event.endDate)}
-                      </p>
-                    </div>
-                  </div>
                 </div>
 
-                <div className="space-y-4 rounded-[1.6rem] border border-stone-200 bg-stone-50 p-5">
+                <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-                      Host
-                    </p>
-                    {owner ? (
-                      <div className="mt-3 flex items-center gap-3">
-                        <UserAvatar user={owner} size={40} className="h-10 w-10" textClassName="text-xs" />
-                        <div>
-                          <p className="text-sm font-semibold text-stone-900">
-                            {getUserDisplayName(owner)}
-                          </p>
-                          <p className="text-sm text-stone-500">{formatEventLocation(event)}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="mt-3 text-sm text-stone-500">Host unavailable</p>
-                    )}
-                  </div>
-
-                  <div className="border-t border-stone-200 pt-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
+                    <p className="text-sm font-semibold text-stone-400">
                       People Going Solo
                     </p>
                     <div className="mt-3 space-y-3">
-                      <SoloAttendeeSummary attendees={attendees} count={attendeeCount} />
+                      <SoloAttendeeSummary
+                        attendees={attendees}
+                        count={attendeeCount}
+                      />
                       {token ? (
                         <GoingSoloButton
                           localEventId={event._id}
@@ -289,15 +327,21 @@ export default function EventDetailModal({
                             await refresh?.();
                           }}
                           onAttendeesChange={(nextAttendees) => {
-                            setAttendees(nextAttendees);
-                            setAttendeeCount(nextAttendees.length);
+                            setAttendeeState({
+                              eventKey,
+                              attendees: nextAttendees,
+                              attendeeCount: nextAttendees.length,
+                            });
                             onAttendeesChange?.(nextAttendees);
                           }}
+                          fullWidth
                           showAttendeeSummary={false}
                           showOpenEventPage={false}
                         />
                       ) : (
-                        <p className="text-sm text-stone-500">Log in to join this event solo.</p>
+                        <p className="text-sm text-stone-500">
+                          Log in to join this event solo.
+                        </p>
                       )}
                     </div>
                   </div>

@@ -6,5 +6,7 @@ export function serializeUserProfile(user) {
     firstName: user.firstName,
     lastName: user.lastName,
     avatarUrl: user.avatarUrl || "",
+    role: user.role || "member",
+    status: user.status || "active",
   };
 }
