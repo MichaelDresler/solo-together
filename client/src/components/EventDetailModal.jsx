@@ -127,6 +127,9 @@ export default function EventDetailModal({
     event.endDate,
   );
   const locationLabel = formatEventLocation(event);
+  const showLegacyAddressDetails =
+    !event.location?.address &&
+    Boolean(event.addressLine1 || event.stateOrProvince || event.postalCode);
   const eventPageButton = event._id ? (
     <Link
       to={`/events/${event._id}`}
@@ -296,9 +299,7 @@ export default function EventDetailModal({
                       <PinIcon className="mt-0.5 size-8 shrink-0 text-stone-500" />
                       <div className="space-y-1">
                         <p>{locationLabel}</p>
-                        {(event.addressLine1 ||
-                          event.stateOrProvince ||
-                          event.postalCode) && (
+                        {showLegacyAddressDetails && (
                           <p className="text-sm text-stone-500">
                             {[event.addressLine1, event.stateOrProvince, event.postalCode]
                               .filter(Boolean)
@@ -325,7 +326,11 @@ export default function EventDetailModal({
                   </div>
                 </div>
 
-                <EventMap/>
+                <EventMap
+                  lat={event.location?.lat}
+                  lng={event.location?.lng}
+                  address={event.location?.address}
+                />
 
                 <div className="space-y-4">
                   <div>

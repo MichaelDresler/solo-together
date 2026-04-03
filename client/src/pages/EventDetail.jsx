@@ -6,6 +6,7 @@ import SoloAttendeeSummary from "../components/SoloAttendeeSummary";
 import UserAvatar from "../components/UserAvatar";
 import { getUserDisplayName } from "../utils/avatar";
 import EventSettingsMenu from "../components/EventSettingsMenu";
+import EventMap from "../components/EventMap";
 import {
   formatEventDateRangeDetail,
   formatEventLocation,
@@ -127,6 +128,9 @@ export default function EventDetail() {
     : (event.soloAttendeeCount || 0);
   const dateTimeLabel = formatEventDateRangeDetail(event.startDate, event.endDate);
   const locationLabel = formatEventLocation(event);
+  const showLegacyAddressDetails =
+    !event.location?.address &&
+    Boolean(event.addressLine1 || event.stateOrProvince || event.postalCode);
 
   return (
     <main className="w-full px-4  sm:px-6  lg:px-8">
@@ -227,9 +231,7 @@ export default function EventDetail() {
                         <PinIcon className="mt-0.5 size-4 shrink-0 text-stone-500" />
                         <div className="space-y-1">
                           <p>{locationLabel}</p>
-                          {(event.addressLine1 ||
-                            event.stateOrProvince ||
-                            event.postalCode) && (
+                          {showLegacyAddressDetails && (
                             <p className="text-sm text-stone-500">
                               {[event.addressLine1, event.stateOrProvince, event.postalCode]
                                 .filter(Boolean)
@@ -255,6 +257,12 @@ export default function EventDetail() {
                       </p>
                     </div>
                   </div>
+
+                  <EventMap
+                    lat={event.location?.lat}
+                    lng={event.location?.lng}
+                    address={event.location?.address}
+                  />
 
                   <div className="space-y-4">
                     <div>

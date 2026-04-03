@@ -4,6 +4,7 @@ import Event from "../models/Event.js";
 import SoloAttendance from "../models/SoloAttendance.js";
 import auth from "../middleware/auth.js";
 import { attachSoloAttendanceSummary } from "../utils/eventAttendance.js";
+import { geocodeAddress } from "../utils/geocodeAddress.js";
 import {
   deleteCloudinaryAsset,
   uploadEventImage,
@@ -70,6 +71,88 @@ function normalizeEventPayload(payload) {
   };
 }
 
+function parseLocationInput(payload) {
+  if (!payload || payload.location == null) {
+    return null;
+  }
+
+  const { location } = payload;
+
+  if (typeof location === "string") {
+    const trimmedLocation = location.trim();
+
+    if (!trimmedLocation) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(trimmedLocation);
+    } catch (error) {
+      console.log("failed to parse event location payload", error);
+      return null;
+    }
+  }
+
+  if (typeof location === "object") {
+    return location;
+  }
+
+  return null;
+}
+
+function buildAddressFromParts(parts) {
+  return parts
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+function getRequestedLocationAddress(payload, normalizedEvent) {
+  const locationInput = parseLocationInput(payload);
+  const nestedAddress = locationInput?.address;
+
+  if (typeof nestedAddress === "string" && nestedAddress.trim()) {
+    return nestedAddress.trim();
+  }
+
+  return buildAddressFromParts([
+    normalizedEvent.addressLine1,
+    normalizedEvent.city,
+    normalizedEvent.stateOrProvince,
+    normalizedEvent.postalCode,
+    normalizedEvent.country,
+  ]);
+}
+
+async function geocodeEventAddress(address) {
+  if (!address?.trim()) {
+    return null;
+  }
+
+  try {
+    const geocodedLocation = await geocodeAddress(address.trim());
+
+    if (
+      !Number.isFinite(geocodedLocation?.lat) ||
+      !Number.isFinite(geocodedLocation?.lng)
+    ) {
+      return null;
+    }
+
+    return {
+      address: address.trim(),
+      lat: geocodedLocation.lat,
+      lng: geocodedLocation.lng,
+    };
+  } catch (error) {
+    console.log("failed to geocode event address", {
+      address,
+      error: error.message,
+    });
+    throw error;
+  }
+}
+
 function isValidDate(value) {
   return value instanceof Date && Number.isFinite(value.valueOf());
 }
@@ -108,6 +191,24 @@ async function findOrCreateTicketmasterEvent(payload) {
     externalUrl = "",
   } = payload;
 
+  const locationAddress = buildAddressFromParts([
+    addressLine1,
+    city,
+    stateOrProvince,
+    postalCode,
+    country,
+  ]);
+
+  if (!locationAddress) {
+    throw new Error("ticketmaster event address is required");
+  }
+
+  const geocodedLocation = await geocodeEventAddress(locationAddress);
+
+  if (!geocodedLocation) {
+    throw new Error("ticketmaster event could not be geocoded");
+  }
+
   return Event.findOneAndUpdate(
     {
       source: "ticketmaster",
@@ -123,6 +224,7 @@ async function findOrCreateTicketmasterEvent(payload) {
         description,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        location: geocodedLocation,
         locationName,
         addressLine1,
         city,
@@ -185,9 +287,14 @@ router.post("/", auth, handleEventImageUpload, async (req, res) => {
 
   try {
     const normalizedEvent = normalizeEventPayload(req.body);
+    const locationAddress = getRequestedLocationAddress(req.body, normalizedEvent);
 
     if (!normalizedEvent.title) {
       return res.status(400).json({ error: "title is required" });
+    }
+
+    if (!locationAddress) {
+      return res.status(400).json({ error: "location.address is required" });
     }
 
     if (
@@ -216,9 +323,27 @@ router.post("/", auth, handleEventImageUpload, async (req, res) => {
       normalizedEvent.imageUrl = uploadedEventImage.imageUrl;
     }
 
+    let geocodedLocation;
+
+    try {
+      geocodedLocation = await geocodeEventAddress(locationAddress);
+    } catch (error) {
+      return res.status(400).json({
+        error: "Unable to geocode the provided address.",
+      });
+    }
+
+    if (!geocodedLocation) {
+      console.log("event geocoding returned no result", { address: locationAddress });
+      return res.status(400).json({
+        error: "Unable to find coordinates for the provided address.",
+      });
+    }
+
     const newEvent = await Event.create({
       source: "internal",
       ...normalizedEvent,
+      location: geocodedLocation,
       imagePublicId: uploadedEventImage?.imagePublicId || "",
       createdBy: req.userId,
       userId: req.userId,
@@ -255,9 +380,14 @@ router.patch("/:id", auth, handleEventImageUpload, async (req, res) => {
     }
 
     const normalizedEvent = normalizeEventPayload(req.body);
+    const locationAddress = getRequestedLocationAddress(req.body, normalizedEvent);
 
     if (!normalizedEvent.title) {
       return res.status(400).json({ error: "title is required" });
+    }
+
+    if (req.body.location != null && !locationAddress) {
+      return res.status(400).json({ error: "location.address is required" });
     }
 
     if (
@@ -285,6 +415,38 @@ router.patch("/:id", auth, handleEventImageUpload, async (req, res) => {
       uploadedEventImage = await uploadEventImage(req.file.buffer, req.userId);
       normalizedEvent.imageUrl = uploadedEventImage.imageUrl;
       normalizedEvent.imagePublicId = uploadedEventImage.imagePublicId;
+    }
+
+    if (req.body.location != null) {
+      const currentLocationAddress =
+        buildAddressFromParts([
+          event.addressLine1,
+          event.city,
+          event.stateOrProvince,
+          event.postalCode,
+          event.country,
+        ]) || event.location?.address || "";
+
+      if (locationAddress !== currentLocationAddress) {
+        let geocodedLocation;
+
+        try {
+          geocodedLocation = await geocodeEventAddress(locationAddress);
+        } catch (error) {
+          return res.status(400).json({
+            error: "Unable to geocode the provided address.",
+          });
+        }
+
+        if (!geocodedLocation) {
+          console.log("event geocoding returned no result", { address: locationAddress });
+          return res.status(400).json({
+            error: "Unable to find coordinates for the provided address.",
+          });
+        }
+
+        normalizedEvent.location = geocodedLocation;
+      }
     }
 
     const previousImagePublicId = event.imagePublicId;
@@ -355,22 +517,35 @@ router.post("/import-ticketmaster", auth, async (req, res) => {
       });
     }
 
-    const event = await findOrCreateTicketmasterEvent({
-      externalId,
-      title,
-      description,
-      startDate,
-      endDate,
-      locationName,
-      addressLine1,
-      city,
-      stateOrProvince,
-      postalCode,
-      country,
-      classification,
-      imageUrl,
-      externalUrl,
-    });
+    let event;
+
+    try {
+      event = await findOrCreateTicketmasterEvent({
+        externalId,
+        title,
+        description,
+        startDate,
+        endDate,
+        locationName,
+        addressLine1,
+        city,
+        stateOrProvince,
+        postalCode,
+        country,
+        classification,
+        imageUrl,
+        externalUrl,
+      });
+    } catch (error) {
+      console.log("failed to import ticketmaster event", {
+        externalId,
+        error: error.message,
+      });
+
+      return res.status(400).json({
+        error: "Unable to geocode the imported event location.",
+      });
+    }
 
     return res.status(200).json(event);
   } catch (e) {

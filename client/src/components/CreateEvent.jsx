@@ -21,6 +21,19 @@ const emptyFormValues = {
   classification: "",
 };
 
+function buildLocationAddress(values) {
+  return [
+    values.addressLine1,
+    values.city,
+    values.stateOrProvince,
+    values.postalCode,
+    values.country,
+  ]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
 function buildDateTimeValue(date, time) {
   if (!date) {
     return "";
@@ -51,9 +64,12 @@ function getDateSelectionParts(value) {
 }
 
 function getInitialFormValues(initialValues) {
+  const locationAddress = initialValues?.location?.address?.trim() || "";
+
   return {
     ...emptyFormValues,
     ...initialValues,
+    addressLine1: initialValues?.addressLine1 || locationAddress,
     startDate: initialValues?.startDate || "",
     endDate: initialValues?.endDate || "",
   };
@@ -200,10 +216,18 @@ export default function CreateEvent({
 
     try {
       const body = new FormData();
+      const locationAddress = buildLocationAddress(formValues);
 
       Object.entries(formValues).forEach(([key, value]) => {
         body.append(key, value);
       });
+
+      body.append(
+        "location",
+        JSON.stringify({
+          address: locationAddress,
+        })
+      );
 
       if (selectedImage) {
         body.append("image", selectedImage);

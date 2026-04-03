@@ -1,6 +1,25 @@
 import mongoose from "mongoose";
 const {Schema, model} = mongoose
 
+const eventLocationSchema = new Schema(
+  {
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    lat: {
+      type: Number,
+      required: true,
+    },
+    lng: {
+      type: Number,
+      required: true,
+    },
+  },
+  { _id: false }
+);
+
 const eventSchema = new Schema(
   {
     source: {
@@ -36,6 +55,10 @@ const eventSchema = new Schema(
     endDate: {
       type: Date,
       default: null,
+    },
+    location: {
+      type: eventLocationSchema,
+      required: true,
     },
     locationName: {
       type: String,

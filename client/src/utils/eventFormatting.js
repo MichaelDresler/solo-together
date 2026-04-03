@@ -107,6 +107,12 @@ export function formatEventDateRangeDetail(startDateValue, endDateValue) {
 }
 
 export function formatEventLocation(event) {
+  const structuredAddress = event?.location?.address?.trim();
+
+  if (structuredAddress) {
+    return structuredAddress;
+  }
+
   const locationParts = [event.locationName, event.city].filter(Boolean);
   return locationParts.join(", ") || "Location unavailable";
 }
