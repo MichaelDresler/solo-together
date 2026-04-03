@@ -9,6 +9,7 @@ import SoloAttendeeSummary from "./SoloAttendeeSummary";
 import GoingSoloButton from "./GoingSoloButton";
 import UserAvatar from "./UserAvatar";
 import EventSettingsMenu from "./EventSettingsMenu";
+import EventMap from "./EventMap";
 
 function CalendarIcon({ className = "size-12" }) {
   return (
@@ -323,6 +324,8 @@ export default function EventDetailModal({
                     </p>
                   </div>
                 </div>
+
+                <EventMap/>
 
                 <div className="space-y-4">
                   <div>

@@ -18,6 +18,7 @@ import SearchResults from "./pages/SearchResults";
 import EditEventPage from "./pages/EditEventPage";
 import AdminMembers from "./pages/AdminMembers";
 
+
 const router = createBrowserRouter([
   // 🔓 Public routes (NO RootLayout)
   {
