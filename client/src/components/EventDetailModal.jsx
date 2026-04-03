@@ -293,9 +293,26 @@ export default function EventDetailModal({
                     </div>
                     <div className="flex items-center gap-3 text-sm text-stone-700">
                       <PinIcon className="mt-0.5 size-8 shrink-0 text-stone-500" />
-                      <p>{locationLabel}</p>
+                      <div className="space-y-1">
+                        <p>{locationLabel}</p>
+                        {(event.addressLine1 ||
+                          event.stateOrProvince ||
+                          event.postalCode) && (
+                          <p className="text-sm text-stone-500">
+                            {[event.addressLine1, event.stateOrProvince, event.postalCode]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                        )}
+                        {event.classification ? (
+                          <p className="text-sm font-medium text-stone-500">
+                            {event.classification}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
+
 
                   <div className="space-y-2">
                     <p className="text-sm font-semibold  text-stone-400">

@@ -245,6 +245,7 @@ export default function EventDetail() {
                       </div>
                     </div>
 
+
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-stone-400">
                         About
