@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 import DateTimeDropdownField from "./DateTimeDropdownField";
 
@@ -11,11 +11,13 @@ const emptyFormValues = {
   description: "",
   startDate: "",
   endDate: "",
+  locationName: "",
   addressLine1: "",
   city: "",
   stateOrProvince: "",
   postalCode: "",
   country: "",
+  classification: "",
   imageUrl: "",
   externalUrl: "",
 };
@@ -453,6 +455,28 @@ export default function CreateEvent({
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">Venue / Location Name</span>
+          <input
+            name="locationName"
+            value={formValues.locationName}
+            onChange={handleChange}
+            className="w-full rounded-xl bg-black/5 px-4 py-3 text-sm outline-none transition"
+            placeholder="The Pearl"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">Category</span>
+          <input
+            name="classification"
+            value={formValues.classification}
+            onChange={handleChange}
+            className="w-full rounded-xl bg-black/5 px-4 py-3 text-sm outline-none transition"
+            placeholder="music, food, art..."
+          />
+        </label>
+
         <label className="block space-y-2">
           <span className="text-sm font-medium text-stone-700">Address</span>
           <input

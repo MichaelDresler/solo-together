@@ -10,6 +10,7 @@ import GoingSoloButton from "./GoingSoloButton";
 import UserAvatar from "./UserAvatar";
 import EventSettingsMenu from "./EventSettingsMenu";
 import EventMap from "./EventMap";
+import FavoriteButton from "./FavoriteButton";
 
 function CalendarIcon({ className = "size-12" }) {
   return (
@@ -54,6 +55,9 @@ export default function EventDetailModal({
   refresh,
   token,
   importPayload = null,
+  onOpenEventPage = null,
+  openingEventPage = false,
+  onEventChange = null,
   onAttendeesChange = null,
   onPrevious = null,
   onNext = null,
@@ -125,6 +129,14 @@ export default function EventDetailModal({
     >
       Open Event Page
     </Link>
+  ) : onOpenEventPage ? (
+    <button
+      type="button"
+      onClick={onOpenEventPage}
+      className="inline-flex h-9 items-center justify-center rounded-[0.8rem] border border-stone-300/80 bg-white px-3.5 text-sm font-semibold text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-950"
+    >
+      {openingEventPage ? "Opening..." : "Open Event Page"}
+    </button>
   ) : null;
 
   return (
@@ -253,6 +265,19 @@ export default function EventDetailModal({
                 <h2 className="text-3xl font-semibold tracking-tight text-stone-950">
                   {event.title || "Untitled event"}
                 </h2>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {event.source ? (
+                    <span className="rounded-full bg-stone-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-stone-500">
+                      {event.source}
+                    </span>
+                  ) : null}
+                  <FavoriteButton
+                    event={event}
+                    token={token}
+                    importPayload={importPayload}
+                    onChange={onEventChange}
+                  />
+                </div>
                 <div>
                   {owner ? (
                     <div className="mt-3 flex items-center gap-2">

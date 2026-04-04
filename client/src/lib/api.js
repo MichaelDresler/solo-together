@@ -9,6 +9,10 @@ export function getAuthToken() {
 }
 
 export function createAuthHeaders(token, extraHeaders = {}) {
+  if (!token) {
+    return { ...extraHeaders };
+  }
+
   return {
     Authorization: `Bearer ${token}`,
     ...extraHeaders,

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import CreateEvent from "../components/CreateEvent";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 import { canManageEvent } from "../lib/permissions";
 

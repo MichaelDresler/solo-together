@@ -1,8 +1,10 @@
 import express from "express";
 import multer from "multer";
 import Event from "../models/Event.js";
+import Favorite from "../models/Favorite.js";
 import SoloAttendance from "../models/SoloAttendance.js";
 import auth from "../middleware/auth.js";
+import optionalAuth from "../middleware/optionalAuth.js";
 import { attachSoloAttendanceSummary } from "../utils/eventAttendance.js";
 import { geocodeAddress } from "../utils/geocodeAddress.js";
 import {
@@ -64,9 +66,94 @@ function normalizeEventPayload(payload) {
     stateOrProvince: payload.stateOrProvince?.trim() || "",
     postalCode: payload.postalCode?.trim() || "",
     country: payload.country?.trim() || "",
+    locationName: payload.locationName?.trim() || "",
+    classification: payload.classification?.trim() || "",
     imageUrl: payload.imageUrl?.trim() || "",
     externalUrl: payload.externalUrl?.trim() || "",
   };
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildExactMatchRegex(value) {
+  return new RegExp(`^${escapeRegExp(value.trim())}$`, "i");
+}
+
+function buildEventFilters(query) {
+  const filters = {};
+
+  if (query.source?.trim()) {
+    filters.source = query.source.trim();
+  }
+
+  if (query.classification?.trim()) {
+    filters.classification = buildExactMatchRegex(query.classification);
+  }
+
+  if (query.city?.trim()) {
+    filters.city = buildExactMatchRegex(query.city);
+  }
+
+  if (query.country?.trim()) {
+    filters.country = buildExactMatchRegex(query.country);
+  }
+
+  if (query.startDateFrom) {
+    const parsedDate = new Date(query.startDateFrom);
+
+    if (Number.isFinite(parsedDate.valueOf())) {
+      filters.startDate = { $gte: parsedDate };
+    }
+  }
+
+  if (query.q?.trim()) {
+    const searchPattern = new RegExp(escapeRegExp(query.q.trim()), "i");
+    filters.$or = [
+      { title: searchPattern },
+      { description: searchPattern },
+      { classification: searchPattern },
+      { locationName: searchPattern },
+      { addressLine1: searchPattern },
+      { city: searchPattern },
+      { stateOrProvince: searchPattern },
+      { country: searchPattern },
+    ];
+  }
+
+  return filters;
+}
+
+async function attachFavoriteState(events, userId) {
+  if (!userId || events.length === 0) {
+    return events.map((event) => ({
+      ...(typeof event.toObject === "function" ? event.toObject() : event),
+      isFavorited: false,
+    }));
+  }
+
+  const eventIds = events
+    .map((event) => event?._id)
+    .filter(Boolean);
+
+  const favorites = await Favorite.find({
+    userId,
+    eventId: { $in: eventIds },
+  }).select("eventId");
+  const favoriteIds = new Set(
+    favorites.map((favorite) => favorite.eventId.toString()),
+  );
+
+  return events.map((event) => {
+    const normalizedEvent =
+      typeof event.toObject === "function" ? event.toObject() : event;
+
+    return {
+      ...normalizedEvent,
+      isFavorited: favoriteIds.has(normalizedEvent._id?.toString()),
+    };
+  });
 }
 
 function normalizeTicketmasterTitle(title) {
@@ -258,14 +345,22 @@ async function findOrCreateTicketmasterEvent(payload) {
 }
 
 // GET all events
-router.get("/", async (req, res) => {
+router.get("/", optionalAuth, async (req, res) => {
   try {
-    const events = await Event.find()
+    const filters = buildEventFilters(req.query);
+    const limit = Number.parseInt(req.query.limit, 10);
+    const query = Event.find(filters)
       .populate("createdBy", "username firstName lastName avatarUrl")
       .populate("userId", "username firstName lastName avatarUrl")
-      .sort({ createdAt: -1 });
+      .sort({ startDate: 1, createdAt: -1 });
 
-    const eventsWithAttendance = await attachSoloAttendanceSummary(events);
+    if (Number.isInteger(limit) && limit > 0) {
+      query.limit(Math.min(limit, 100));
+    }
+
+    const events = await query;
+    const eventsWithFavorites = await attachFavoriteState(events, req.userId);
+    const eventsWithAttendance = await attachSoloAttendanceSummary(eventsWithFavorites);
 
     return res.json(eventsWithAttendance);
   } catch (e) {
@@ -275,7 +370,7 @@ router.get("/", async (req, res) => {
 });
 
 // GET single event by local Mongo id
-router.get("/:id", async (req, res) => {
+router.get("/:id", optionalAuth, async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
       .populate("createdBy", "username firstName lastName avatarUrl")
@@ -285,7 +380,8 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "event not found" });
     }
 
-    const [eventWithAttendance] = await attachSoloAttendanceSummary([event]);
+    const [eventWithFavoriteState] = await attachFavoriteState([event], req.userId);
+    const [eventWithAttendance] = await attachSoloAttendanceSummary([eventWithFavoriteState]);
 
     return res.json(eventWithAttendance);
   } catch (e) {
@@ -642,6 +738,47 @@ router.get("/:id/solo-attendees", auth, async (req, res) => {
   }
 });
 
+router.post("/:id/favorite", auth, async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+      return res.status(404).json({ error: "event not found" });
+    }
+
+    await Favorite.findOneAndUpdate(
+      { userId: req.userId, eventId: event._id },
+      { userId: req.userId, eventId: event._id },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    return res.status(201).json({
+      eventId: event._id,
+      isFavorited: true,
+    });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ error: "server error" });
+  }
+});
+
+router.delete("/:id/favorite", auth, async (req, res) => {
+  try {
+    await Favorite.findOneAndDelete({
+      userId: req.userId,
+      eventId: req.params.id,
+    });
+
+    return res.json({
+      eventId: req.params.id,
+      isFavorited: false,
+    });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ error: "server error" });
+  }
+});
+
 // DELETE event by id (protected)
 router.delete("/:id", auth, async (req, res) => {
   try {
@@ -668,6 +805,7 @@ router.delete("/:id", auth, async (req, res) => {
 
     await Event.findByIdAndDelete(req.params.id);
     await SoloAttendance.deleteMany({ eventId: req.params.id });
+    await Favorite.deleteMany({ eventId: req.params.id });
 
     return res.json({ message: "event deleted successfully" });
   } catch (e) {

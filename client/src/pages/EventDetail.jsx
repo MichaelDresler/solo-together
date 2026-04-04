@@ -1,12 +1,13 @@
 import { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 import GoingSoloButton from "../components/GoingSoloButton";
 import SoloAttendeeSummary from "../components/SoloAttendeeSummary";
 import UserAvatar from "../components/UserAvatar";
 import { getUserDisplayName } from "../utils/avatar";
 import EventSettingsMenu from "../components/EventSettingsMenu";
 import EventMap from "../components/EventMap";
+import FavoriteButton from "../components/FavoriteButton";
 import {
   formatEventDateRangeParts,
   formatEventLocationParts,
@@ -191,6 +192,16 @@ export default function EventDetail() {
                             {event.source}
                           </span>
                         ) : null}
+                        <FavoriteButton
+                          event={event}
+                          token={token}
+                          onChange={(nextEvent) =>
+                            setEvent((currentEvent) => ({
+                              ...currentEvent,
+                              ...nextEvent,
+                            }))
+                          }
+                        />
                       </div>
 
                       <div>

@@ -572,7 +572,7 @@ async function requestJson(path, options = {}) {
 
 async function ensureUser(user) {
   const registerPayload = {
-    username: user.username,
+    email: `${user.username}@example.com`,
     password: DEMO_PASSWORD,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -602,7 +602,7 @@ async function ensureUser(user) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      username: user.username,
+      email: `${user.username}@example.com`,
       password: DEMO_PASSWORD,
     }),
   });
@@ -630,6 +630,7 @@ async function syncUserProfile(user, token) {
     body: JSON.stringify({
       firstName: user.firstName,
       lastName: user.lastName,
+      email: `${user.username}@example.com`,
       avatarUrl: buildAvatarUrl(user.username),
     }),
   });

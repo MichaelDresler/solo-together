@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 import EventList from "../components/EventList";
 import UserAvatar from "../components/UserAvatar";
 import { createAuthHeaders, getApiUrl } from "../lib/api";

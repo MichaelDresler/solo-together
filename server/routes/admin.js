@@ -1,6 +1,7 @@
 import express from "express";
 import auth from "../middleware/auth.js";
 import Event from "../models/Event.js";
+import Favorite from "../models/Favorite.js";
 import SoloAttendance from "../models/SoloAttendance.js";
 import User from "../models/User.js";
 import { deleteCloudinaryAsset } from "../utils/cloudinary.js";
@@ -27,7 +28,7 @@ function requireSuperAdmin(req, res, next) {
 router.get("/members", auth, requireAdmin, async (_req, res) => {
   try {
     const users = await User.find()
-      .select("username firstName lastName avatarUrl role status createdAt")
+      .select("email username firstName lastName avatarUrl role status createdAt")
       .sort({ createdAt: -1 });
 
     return res.json({
@@ -127,6 +128,9 @@ router.delete("/members/:id", auth, requireAdmin, async (req, res) => {
     await SoloAttendance.deleteMany({
       $or: [{ userId: user._id }, { eventId: { $in: ownedEventIds } }],
     });
+    await Favorite.deleteMany({
+      $or: [{ userId: user._id }, { eventId: { $in: ownedEventIds } }],
+    });
     await User.findByIdAndDelete(user._id);
 
     return res.json({ message: "member deleted successfully" });
@@ -158,15 +162,17 @@ router.delete("/events", auth, async (req, res) => {
       }
     }
 
-    const [eventResult, soloResult] = await Promise.all([
+    const [eventResult, soloResult, favoriteResult] = await Promise.all([
       Event.deleteMany({}),
       SoloAttendance.deleteMany({}),
+      Favorite.deleteMany({}),
     ]);
 
     return res.json({
       message: "all events deleted successfully",
       deletedEvents: eventResult.deletedCount || 0,
       deletedSoloAttendance: soloResult.deletedCount || 0,
+      deletedFavorites: favoriteResult.deletedCount || 0,
     });
   } catch (error) {
     console.log(error);

@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.js"
 import adminRoutes from "./routes/admin.js";
 import eventRoutes from "./routes/events.js";
 import profileRoutes from "./routes/profile.js";
+import searchRoutes from "./routes/search.js";
 import ticketmasterRoutes from "./routes/ticketmaster.js";
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes)
 app.use("/api/admin", adminRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/search", searchRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/ticketmaster", ticketmasterRoutes);
 

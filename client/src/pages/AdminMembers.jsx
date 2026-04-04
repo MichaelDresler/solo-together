@@ -1,5 +1,5 @@
-import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { AuthContext } from "../context/auth-context";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 import { canAssignAdmins, canManageMembers } from "../lib/permissions";
 
@@ -10,7 +10,7 @@ export default function AdminMembers() {
   const [loading, setLoading] = useState(true);
   const [activeAction, setActiveAction] = useState("");
 
-  async function loadMembers() {
+  const loadMembers = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -30,7 +30,7 @@ export default function AdminMembers() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     if (canManageMembers(user)) {
@@ -38,7 +38,7 @@ export default function AdminMembers() {
     } else {
       setLoading(false);
     }
-  }, [token, user]);
+  }, [loadMembers, user]);
 
   if (!canManageMembers(user)) {
     return (
@@ -182,6 +182,7 @@ export default function AdminMembers() {
                             {member.firstName} {member.lastName}
                           </p>
                           <p className="text-sm text-stone-500">@{member.username}</p>
+                          <p className="text-sm text-stone-500">{member.email || "No email set"}</p>
                         </div>
                       </td>
                       <td className="px-4 py-4">

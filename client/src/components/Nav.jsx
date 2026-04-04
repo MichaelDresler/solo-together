@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 import UserAvatar from "./UserAvatar";
 import { getUserDisplayName } from "../utils/avatar";
 import { canManageMembers } from "../lib/permissions";
@@ -12,7 +12,6 @@ export default function Nav({ onOpenSearch }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  const isEventsPage = slicedPathname === "/discover";
   const isAuthenticated = !!user;
   const showAdminLink = canManageMembers(user);
 
@@ -33,7 +32,11 @@ export default function Nav({ onOpenSearch }) {
     },
   ];
 
-  const publicRoutes = [{ name: "Discover", link: "/discover" }];
+  const publicRoutes = [
+    { name: "Home", link: "/" },
+    { name: "Discover", link: "/discover" },
+    { name: "Search", link: "/search" },
+  ];
 
   useEffect(() => {
     if (!isMenuOpen) return undefined;
@@ -59,7 +62,7 @@ export default function Nav({ onOpenSearch }) {
     };
   }, [isMenuOpen]);
 
-  if (!isAuthenticated && isEventsPage) {
+  if (!isAuthenticated && ["/", "/discover", "/search"].includes(slicedPathname)) {
     return (
       <nav className="fixed top-0 z-40 flex w-full flex-row justify-between border-b border-black/10 bg-white p-2">
         <h1 className="flex w-full items-center text-2xl font-bold tracking-tight text-black">
@@ -200,7 +203,7 @@ export default function Nav({ onOpenSearch }) {
                   {getUserDisplayName(user)}
                 </p>
                 <p className="truncate text-xs text-stone-500">
-                  @{user?.username}
+                  {user?.email || `@${user?.username}`}
                 </p>
               </div>
             </div>
@@ -221,13 +224,22 @@ export default function Nav({ onOpenSearch }) {
                 Settings
               </Link>
               {showAdminLink ? (
-                <Link
-                  to="/admin/members"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
-                >
-                  Admin
-                </Link>
+                <>
+                  <Link
+                    to="/admin/events"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                  >
+                    Manage events
+                  </Link>
+                  <Link
+                    to="/admin/members"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                  >
+                    Manage members
+                  </Link>
+                </>
               ) : null}
               <button
                 type="button"

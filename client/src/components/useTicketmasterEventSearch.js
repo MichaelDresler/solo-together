@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { getApiUrl } from "../lib/api";
-import { normalizeTicketmasterEvent } from "./ticketmasterSearchUtils";
+import { createAuthHeaders, getApiUrl } from "../lib/api";
+import { normalizeSearchEvent } from "./ticketmasterSearchUtils";
 
-export default function useTicketmasterEventSearch(query) {
+export default function useTicketmasterEventSearch(query, token = null) {
   const trimmedQuery = query.trim();
   const [events, setEvents] = useState([]);
   const [error, setError] = useState("");
@@ -24,7 +24,9 @@ export default function useTicketmasterEventSearch(query) {
 
       try {
         const params = new URLSearchParams({ q: trimmedQuery });
-        const res = await fetch(getApiUrl(`/api/ticketmaster/events?${params.toString()}`));
+        const res = await fetch(getApiUrl(`/api/search/events?${params.toString()}`), {
+          headers: createAuthHeaders(token),
+        });
         const data = await res.json();
 
         if (isCancelled) {
@@ -32,19 +34,19 @@ export default function useTicketmasterEventSearch(query) {
         }
 
         if (!res.ok) {
-          setError(data.error || "Failed to load Ticketmaster events");
+          setError(data.error || "Failed to load search results");
           setEvents([]);
           return;
         }
 
-        setEvents((data.events || []).map(normalizeTicketmasterEvent));
+        setEvents((data.events || []).map(normalizeSearchEvent));
       } catch (submitError) {
         if (isCancelled) {
           return;
         }
 
         console.error(submitError);
-        setError("Failed to load Ticketmaster events");
+        setError("Failed to load search results");
         setEvents([]);
       } finally {
         if (!isCancelled) {
@@ -58,7 +60,7 @@ export default function useTicketmasterEventSearch(query) {
     return () => {
       isCancelled = true;
     };
-  }, [trimmedQuery]);
+  }, [token, trimmedQuery]);
 
   return {
     events,

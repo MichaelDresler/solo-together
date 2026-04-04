@@ -1,14 +1,17 @@
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import TicketmasterResults from "../components/TicketmasterResults";
 import useTicketmasterEventSearch from "../components/useTicketmasterEventSearch";
+import { AuthContext } from "../context/auth-context";
 
 export default function SearchResults() {
+  const { token } = useContext(AuthContext);
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
-  const { events, error, loading, hasQuery, setEvents } = useTicketmasterEventSearch(query);
+  const { events, error, loading, hasQuery, setEvents } = useTicketmasterEventSearch(query, token);
   const [sortBy, setSortBy] = useState("date-asc");
   const [filterByCategory, setFilterByCategory] = useState("all");
+  const [filterBySource, setFilterBySource] = useState("all");
 
   const categories = useMemo(() => {
     const nextCategories = events
@@ -20,6 +23,10 @@ export default function SearchResults() {
 
   const displayEvents = useMemo(() => {
     let filtered = [...events];
+
+    if (filterBySource !== "all") {
+      filtered = filtered.filter((event) => event.source === filterBySource);
+    }
 
     if (filterByCategory !== "all") {
       filtered = filtered.filter((event) => event.classification === filterByCategory);
@@ -45,7 +52,7 @@ export default function SearchResults() {
     });
 
     return filtered;
-  }, [events, filterByCategory, sortBy]);
+  }, [events, filterByCategory, filterBySource, sortBy]);
 
   const emptyState = !hasQuery ? (
     <div className="rounded-[1.75rem] border border-dashed border-stone-300 bg-stone-50 px-8 py-14 text-center">
@@ -67,13 +74,13 @@ export default function SearchResults() {
     <main className="mx-auto w-full max-w-[80rem] px-6">
       <header className="mb-8">
         <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#CF5812]">
-          Ticketmaster Search
+          Unified Search
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-950">
           {hasQuery ? `Results for “${query}”` : "Search events"}
         </h1>
         <p className="mt-3 max-w-3xl text-base text-stone-500">
-          Browse live Ticketmaster events with the same card and detail flow as discovery, then open any result as a SoloTogether event page.
+          Search SoloTogether listings and Ticketmaster results in one place, then open any match with the same card and detail flow.
         </p>
       </header>
 
@@ -114,6 +121,22 @@ export default function SearchResults() {
                   {category}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col">
+            <label htmlFor="source-results" className="text-sm font-medium text-stone-600">
+              Filter by source
+            </label>
+            <select
+              id="source-results"
+              value={filterBySource}
+              onChange={(event) => setFilterBySource(event.target.value)}
+              className="mt-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-stone-400"
+            >
+              <option value="all">All sources</option>
+              <option value="internal">SoloTogether</option>
+              <option value="ticketmaster">Ticketmaster</option>
             </select>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 import EventCard from "./EventCard";
 import EventDetailModal from "./EventDetailModal";
@@ -17,16 +17,20 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
   const closeTimeoutRef = useRef(null);
   const openFrameRef = useRef(null);
 
+  function getEventKey(event) {
+    return event._id || event.externalId;
+  }
+
   const selectedEvent = useMemo(
-    () => events.find((event) => event.externalId === selectedEventId) || null,
+    () => events.find((event) => getEventKey(event) === selectedEventId) || null,
     [events, selectedEventId],
   );
   const activeEvent = useMemo(
-    () => events.find((event) => event.externalId === activeEventId) || null,
+    () => events.find((event) => getEventKey(event) === activeEventId) || null,
     [activeEventId, events],
   );
   const activeEventIndex = useMemo(
-    () => events.findIndex((event) => event.externalId === activeEventId),
+    () => events.findIndex((event) => getEventKey(event) === activeEventId),
     [activeEventId, events],
   );
 
@@ -44,15 +48,15 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
   );
 
   useEffect(() => {
-    if (activeEventId && !events.some((event) => event.externalId === activeEventId)) {
+    if (activeEventId && !events.some((event) => getEventKey(event) === activeEventId)) {
       setActiveEventId(null);
       setSelectedEventId(null);
     }
   }, [activeEventId, events]);
 
-  async function importEvent(event) {
-    if (event._id) {
-      return event._id;
+  async function importEvent(targetEvent) {
+    if (targetEvent._id) {
+      return targetEvent._id;
     }
 
     const res = await fetch(getApiUrl("/api/events/import-ticketmaster"), {
@@ -60,7 +64,7 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
       headers: createAuthHeaders(token, {
         "Content-Type": "application/json",
       }),
-      body: JSON.stringify(buildImportPayload(event)),
+      body: JSON.stringify(buildImportPayload(targetEvent)),
     });
 
     const data = await res.json();
@@ -71,7 +75,7 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
 
     setEvents((currentEvents) =>
       currentEvents.map((currentEvent) =>
-        currentEvent.externalId === event.externalId
+        currentEvent.externalId === targetEvent.externalId
           ? {
               ...currentEvent,
               _id: data._id,
@@ -86,14 +90,15 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
   }
 
   async function openEventPage(event) {
-    if (!token && !event._id) {
+    if (!event._id && (!token || event.source !== "ticketmaster")) {
       return;
     }
 
-    setOpeningEventId(event.externalId);
+    setOpeningEventId(getEventKey(event));
 
     try {
-      const localEventId = await importEvent(event);
+      const localEventId =
+        event.source === "ticketmaster" ? await importEvent(event) : event._id;
       navigate(`/events/${localEventId}`);
     } catch (openError) {
       console.error(openError);
@@ -102,10 +107,10 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
     }
   }
 
-  function updateEventAttendance(externalId, nextAttendees) {
+  function updateEventAttendance(eventKey, nextAttendees) {
     setEvents((currentEvents) =>
       currentEvents.map((event) =>
-        event.externalId === externalId
+        getEventKey(event) === eventKey
           ? {
               ...event,
               soloPreviewUsers: nextAttendees.slice(0, 3),
@@ -116,7 +121,22 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
     );
   }
 
-  function handleOpen(externalId) {
+  function handleEventChange(nextEvent) {
+    setEvents((currentEvents) =>
+      currentEvents.map((currentEvent) =>
+        getEventKey(currentEvent) === getEventKey(nextEvent)
+          || (
+            currentEvent.externalId &&
+            nextEvent.externalId &&
+            currentEvent.externalId === nextEvent.externalId
+          )
+          ? { ...currentEvent, ...nextEvent }
+          : currentEvent
+      ),
+    );
+  }
+
+  function handleOpen(eventKey) {
     if (closeTimeoutRef.current) {
       window.clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
@@ -126,9 +146,9 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
       window.cancelAnimationFrame(openFrameRef.current);
     }
 
-    setActiveEventId(externalId);
+    setActiveEventId(eventKey);
     openFrameRef.current = window.requestAnimationFrame(() => {
-      setSelectedEventId(externalId);
+      setSelectedEventId(eventKey);
       openFrameRef.current = null;
     });
   }
@@ -157,8 +177,9 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
     }
 
     const previousEvent = events[activeEventIndex - 1];
-    setActiveEventId(previousEvent.externalId);
-    setSelectedEventId(previousEvent.externalId);
+    const previousEventKey = getEventKey(previousEvent);
+    setActiveEventId(previousEventKey);
+    setSelectedEventId(previousEventKey);
   }
 
   function handleNext() {
@@ -167,8 +188,9 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
     }
 
     const nextEvent = events[activeEventIndex + 1];
-    setActiveEventId(nextEvent.externalId);
-    setSelectedEventId(nextEvent.externalId);
+    const nextEventKey = getEventKey(nextEvent);
+    setActiveEventId(nextEventKey);
+    setSelectedEventId(nextEventKey);
   }
 
   if (!events.length) {
@@ -183,10 +205,11 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
           token={token}
           importPayload={activeEvent ? buildImportPayload(activeEvent) : null}
           onOpenEventPage={activeEvent ? () => openEventPage(activeEvent) : null}
-          openingEventPage={openingEventId === activeEvent?.externalId}
+          openingEventPage={openingEventId === getEventKey(activeEvent || {})}
+          onEventChange={handleEventChange}
           onAttendeesChange={
             activeEvent
-              ? (nextAttendees) => updateEventAttendance(activeEvent.externalId, nextAttendees)
+              ? (nextAttendees) => updateEventAttendance(getEventKey(activeEvent), nextAttendees)
               : null
           }
           onPrevious={handlePrevious}
@@ -203,9 +226,12 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {events.map((event) => (
           <EventCard
-            key={event.externalId}
+            key={getEventKey(event)}
             event={event}
-            onOpen={() => handleOpen(event.externalId)}
+            token={token}
+            importPayload={event.source === "ticketmaster" ? buildImportPayload(event) : null}
+            onEventChange={handleEventChange}
+            onOpen={() => handleOpen(getEventKey(event))}
           />
         ))}
       </div>
@@ -218,10 +244,11 @@ export default function TicketmasterResults({ events, setEvents, emptyState = nu
         token={token}
         importPayload={activeEvent ? buildImportPayload(activeEvent) : null}
         onOpenEventPage={activeEvent ? () => openEventPage(activeEvent) : null}
-        openingEventPage={openingEventId === activeEvent?.externalId}
+        openingEventPage={openingEventId === getEventKey(activeEvent || {})}
+        onEventChange={handleEventChange}
         onAttendeesChange={
           activeEvent
-            ? (nextAttendees) => updateEventAttendance(activeEvent.externalId, nextAttendees)
+            ? (nextAttendees) => updateEventAttendance(getEventKey(activeEvent), nextAttendees)
             : null
         }
         onPrevious={handlePrevious}

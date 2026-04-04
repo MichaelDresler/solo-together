@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import SearchResults from "./pages/SearchResults";
 import EditEventPage from "./pages/EditEventPage";
 import AdminMembers from "./pages/AdminMembers";
+import AdminEvents from "./pages/AdminEvents";
 
 
 const router = createBrowserRouter([
@@ -60,11 +61,7 @@ const router = createBrowserRouter([
       },
       {
         path: "search",
-        element: (
-          <ProtectedRoute>
-            <SearchResults />
-          </ProtectedRoute>
-        ),
+        element: <SearchResults />,
       },
       {
         path: "create-event",
@@ -95,6 +92,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <AdminMembers />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/events",
+        element: (
+          <ProtectedRoute>
+            <AdminEvents />
           </ProtectedRoute>
         ),
       },

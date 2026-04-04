@@ -1,6 +1,7 @@
 import { useContext, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
+import { getApiUrl } from "../lib/api";
 
 export default function Register() {
   const [err, setErr] = useState("");
@@ -18,13 +19,13 @@ export default function Register() {
     setErr("");
     const formData = new FormData(e.target);
     const registrationInfo = {
-      username: formData.get("username"),
       password: formData.get("password"),
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
+      email: formData.get("email"),
     };
     try {
-      const res = await fetch("http://localhost:5001/api/auth/register", {
+      const res = await fetch(getApiUrl("/api/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationInfo),
@@ -45,7 +46,7 @@ export default function Register() {
   const fields = [
     { name: "firstName", label: "First name", type: "text", placeholder: "Jamie", autoComplete: "given-name", icon: <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /> },
     { name: "lastName", label: "Last name", type: "text", placeholder: "Kim", autoComplete: "family-name", icon: <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /> },
-    { name: "username", label: "Username", type: "text", placeholder: "jamiekim92", autoComplete: "username", icon: <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 0c0 1.657 1.007 3 2.25 3S21 13.657 21 12a9 9 0 10-2.636 6.364M16.5 12V8.25" /> },
+    { name: "email", label: "Email", type: "email", placeholder: "jamie@example.com", autoComplete: "email", icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5H4.5A2.25 2.25 0 0 0 2.25 6.75m19.5 0v.243a2.25 2.25 0 0 1-.964 1.856l-7.5 5.25a2.25 2.25 0 0 1-2.572 0l-7.5-5.25A2.25 2.25 0 0 1 2.25 6.993V6.75" /> },
   ];
 
   return (

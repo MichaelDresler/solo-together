@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 import EventCard from "./EventCard";
 import EventDetailModal from "./EventDetailModal";
 
@@ -7,22 +7,27 @@ const MODAL_TRANSITION_MS = 200;
 
 export default function EventList({ events, refresh }) {
   const { token } = useContext(AuthContext);
+  const [eventState, setEventState] = useState(events);
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [activeEventId, setActiveEventId] = useState(null);
   const closeTimeoutRef = useRef(null);
   const openFrameRef = useRef(null);
 
+  useEffect(() => {
+    setEventState(events);
+  }, [events]);
+
   const selectedEvent = useMemo(
-    () => events.find((event) => event._id === selectedEventId) || null,
-    [events, selectedEventId]
+    () => eventState.find((event) => event._id === selectedEventId) || null,
+    [eventState, selectedEventId]
   );
   const activeEvent = useMemo(
-    () => events.find((event) => event._id === activeEventId) || null,
-    [activeEventId, events]
+    () => eventState.find((event) => event._id === activeEventId) || null,
+    [activeEventId, eventState]
   );
   const activeEventIndex = useMemo(
-    () => events.findIndex((event) => event._id === activeEventId),
-    [activeEventId, events]
+    () => eventState.findIndex((event) => event._id === activeEventId),
+    [activeEventId, eventState]
   );
 
   useEffect(
@@ -78,26 +83,40 @@ export default function EventList({ events, refresh }) {
       return;
     }
 
-    const previousEvent = events[activeEventIndex - 1];
+    const previousEvent = eventState[activeEventIndex - 1];
     setActiveEventId(previousEvent._id);
     setSelectedEventId(previousEvent._id);
   }
 
   function handleNext() {
-    if (activeEventIndex < 0 || activeEventIndex >= events.length - 1) {
+    if (activeEventIndex < 0 || activeEventIndex >= eventState.length - 1) {
       return;
     }
 
-    const nextEvent = events[activeEventIndex + 1];
+    const nextEvent = eventState[activeEventIndex + 1];
     setActiveEventId(nextEvent._id);
     setSelectedEventId(nextEvent._id);
+  }
+
+  function handleEventChange(nextEvent) {
+    setEventState((currentEvents) =>
+      currentEvents.map((event) =>
+        event._id === nextEvent._id ? { ...event, ...nextEvent } : event
+      )
+    );
   }
 
   return (
     <>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {events.map((event) => (
-          <EventCard key={event._id} event={event} onOpen={() => handleOpen(event._id)} />
+        {eventState.map((event) => (
+          <EventCard
+            key={event._id}
+            event={event}
+            token={token}
+            onOpen={() => handleOpen(event._id)}
+            onEventChange={handleEventChange}
+          />
         ))}
       </div>
 
@@ -107,10 +126,11 @@ export default function EventList({ events, refresh }) {
         onClose={handleClose}
         refresh={refresh}
         token={token}
+        onEventChange={handleEventChange}
         onPrevious={handlePrevious}
         onNext={handleNext}
         hasPrevious={activeEventIndex > 0}
-        hasNext={activeEventIndex >= 0 && activeEventIndex < events.length - 1}
+        hasNext={activeEventIndex >= 0 && activeEventIndex < eventState.length - 1}
       />
     </>
   );

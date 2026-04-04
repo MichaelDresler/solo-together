@@ -6,31 +6,68 @@ import auth from "../middleware/auth.js";
 import { serializeUserProfile } from "../utils/profile.js";
 const router = express.Router();
 
+function normalizeEmail(value) {
+  return value?.trim().toLowerCase() || "";
+}
+
+function generateBaseUsername({ firstName, lastName, email }) {
+  const joinedName = [firstName, lastName]
+    .map((value) => value?.trim().toLowerCase())
+    .filter(Boolean)
+    .join(".");
+
+  if (joinedName) {
+    return joinedName.replace(/[^a-z0-9.]+/g, "");
+  }
+
+  return normalizeEmail(email)
+    .split("@")[0]
+    .replace(/[^a-z0-9.]+/g, "");
+}
+
+async function buildUniqueUsername(input) {
+  const baseUsername = generateBaseUsername(input) || "member";
+  let candidate = baseUsername;
+  let suffix = 1;
+
+  while (await User.exists({ username: candidate })) {
+    suffix += 1;
+    candidate = `${baseUsername}${suffix}`;
+  }
+
+  return candidate;
+}
+
 router.post("/register", async (req, res) => {
   try {
-    const { username, password, firstName, lastName } = req.body;
+    const { password } = req.body;
+    const firstName = req.body.firstName?.trim() || "";
+    const lastName = req.body.lastName?.trim() || "";
+    const email = normalizeEmail(req.body.email);
 
-    //check if username exists
-    if (!username || !password || !firstName || !lastName) {
+    if (!email || !password || !firstName || !lastName) {
       return res
         .status(400)
         .json({ error: "please fill out the missing field" });
     }
-    //must be longer than 8 characters
-    if (password.length < 1) {
+
+    if (password.length < 8) {
       return res
         .status(400)
         .json({ error: "password must be as least 8 characters" });
     }
-    const usernameExists = await User.findOne({ username });
-    if (usernameExists) {
-      return res.status(409).json({ error: "username already taken" });
+
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      return res.status(409).json({ error: "email already in use" });
     }
 
+    const username = await buildUniqueUsername({ firstName, lastName, email });
     const hashedPassword = await bcrypt.hash(password, 10);
     const hasExistingUsers = (await User.estimatedDocumentCount()) > 0;
     const newUser = await User.create({
-      username: username.toLowerCase(),
+      email,
+      username,
       hashedPassword,
       firstName,
       lastName,
@@ -39,7 +76,7 @@ router.post("/register", async (req, res) => {
     console.log(`new user created: ${newUser}`);
 
     const token = jwt.sign(
-      { userId: newUser._id, username: newUser.username },
+      { userId: newUser._id, email: newUser.email },
       process.env.JWT_SECRET_TOKEN,
       { expiresIn: "1h" },
     );
@@ -56,28 +93,31 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const normalizedUsername = username.toLowerCase()
-    // validation
-    if (!username || !password) {
+    const email = normalizeEmail(req.body.email);
+    const identifier = email || req.body.username?.trim().toLowerCase() || "";
+    const { password } = req.body;
+
+    if (!identifier || !password) {
       return res
         .status(400)
-        .json({ error: "please provide a username or password" });
+        .json({ error: "please provide an email and password" });
     }
-    const user = await User.findOne({ username:normalizedUsername });
-    // validation
+
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+    });
+
     if (!user) return res.status(404).json({ error: "no such user exists" });
     if (user.status === "suspended") {
       return res.status(403).json({ error: "account is suspended" });
     }
 
-    // validation
     const passwordMatches = await bcrypt.compare(password, user.hashedPassword);
     if (!passwordMatches)
       return res.status(401).json({ error: "invalid credentials" });
 
     const token = jwt.sign(
-      { userId: user._id, username: user.username },
+      { userId: user._id, email: user.email || "" },
       process.env.JWT_SECRET_TOKEN,
       { expiresIn: "1h" },
     );

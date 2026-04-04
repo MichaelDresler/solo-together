@@ -1,12 +1,12 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 import UserAvatar from "../components/UserAvatar";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 
 export default function Settings() {
   const { token, user, updateUser } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
-  const [formValues, setFormValues] = useState({ firstName: "", lastName: "" });
+  const [formValues, setFormValues] = useState({ firstName: "", lastName: "", email: "" });
   const [selectedFile, setSelectedFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -41,6 +41,7 @@ export default function Settings() {
         setFormValues({
           firstName: data.user.firstName || "",
           lastName: data.user.lastName || "",
+          email: data.user.email || "",
         });
       } catch (fetchError) {
         if (!isActive) return;
@@ -235,6 +236,18 @@ export default function Settings() {
                 onChange={handleInputChange}
                 className="w-full rounded-xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-500"
                 placeholder="Last name"
+              />
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-stone-700">Email</span>
+              <input
+                name="email"
+                type="email"
+                value={formValues.email}
+                onChange={handleInputChange}
+                className="w-full rounded-xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-500"
+                placeholder="you@example.com"
               />
             </label>
 

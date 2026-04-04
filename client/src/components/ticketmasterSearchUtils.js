@@ -20,13 +20,13 @@ export function buildImportPayload(event) {
 export function normalizeTicketmasterEvent(event) {
   return {
     _id: event._id || null,
-    externalId: event.id || "",
-    source: "ticketmaster",
-    externalSource: "ticketmaster",
+    externalId: event.externalId || event.id || "",
+    source: event.source || "ticketmaster",
+    externalSource: event.externalSource || "ticketmaster",
     title: event.title || "",
     description: event.description || "",
-    startDate: event.start || "",
-    endDate: event.end || "",
+    startDate: event.startDate || event.start || "",
+    endDate: event.endDate || event.end || "",
     locationName: event.locationName || event.venue || "",
     addressLine1: event.addressLine1 || "",
     city: event.city || "",
@@ -38,6 +38,22 @@ export function normalizeTicketmasterEvent(event) {
     classification: event.classification || "",
     createdBy: event.createdBy || null,
     userId: event.userId || null,
+    isFavorited: Boolean(event.isFavorited),
+    soloPreviewUsers: event.soloPreviewUsers || [],
+    soloAttendeeCount: event.soloAttendeeCount || 0,
+  };
+}
+
+export function normalizeSearchEvent(event) {
+  if (event.source === "ticketmaster" || event.externalSource === "ticketmaster") {
+    return normalizeTicketmasterEvent(event);
+  }
+
+  return {
+    ...event,
+    source: event.source || "internal",
+    externalId: event.externalId || "",
+    isFavorited: Boolean(event.isFavorited),
     soloPreviewUsers: event.soloPreviewUsers || [],
     soloAttendeeCount: event.soloAttendeeCount || 0,
   };

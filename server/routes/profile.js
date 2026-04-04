@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import auth from "../middleware/auth.js";
 import Event from "../models/Event.js";
+import Favorite from "../models/Favorite.js";
 import SoloAttendance from "../models/SoloAttendance.js";
 import User from "../models/User.js";
 import { attachSoloAttendanceSummary } from "../utils/eventAttendance.js";
@@ -124,16 +125,52 @@ router.get("/me/events", auth, async (req, res) => {
   }
 });
 
+router.get("/me/favorites", auth, async (req, res) => {
+  try {
+    const favorites = await Favorite.find({ userId: req.userId })
+      .populate({
+        path: "eventId",
+        populate: [
+          {
+            path: "createdBy",
+            select: "username firstName lastName avatarUrl",
+          },
+          {
+            path: "userId",
+            select: "username firstName lastName avatarUrl",
+          },
+        ],
+      })
+      .sort({ createdAt: -1 });
+
+    const events = favorites
+      .map((favorite) => favorite.eventId)
+      .filter(Boolean)
+      .map((event) => ({
+        ...event.toObject(),
+        isFavorited: true,
+      }));
+
+    const eventsWithAttendance = await attachSoloAttendanceSummary(events);
+
+    return res.json({ favorites: eventsWithAttendance });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "server error" });
+  }
+});
+
 router.patch("/me", auth, async (req, res) => {
   try {
     const firstName = req.body.firstName?.trim();
     const lastName = req.body.lastName?.trim();
+    const email = req.body.email?.trim().toLowerCase() || "";
     const hasAvatarUrl = typeof req.body.avatarUrl === "string";
     const avatarUrl = hasAvatarUrl ? req.body.avatarUrl.trim() : null;
 
-    if (!firstName || !lastName) {
+    if (!firstName || !lastName || !email) {
       return res.status(400).json({
-        error: "First name and last name are required.",
+        error: "First name, last name, and email are required.",
       });
     }
 
@@ -141,6 +178,15 @@ router.patch("/me", auth, async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ error: "user not found" });
+    }
+
+    const existingUser = await User.findOne({
+      email,
+      _id: { $ne: req.userId },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ error: "Email is already in use." });
     }
 
     const previousAvatarPublicId = user.avatarPublicId;
@@ -151,6 +197,7 @@ router.patch("/me", auth, async (req, res) => {
 
     user.firstName = firstName;
     user.lastName = lastName;
+    user.email = email;
 
     if (hasAvatarUrl) {
       user.avatarUrl = avatarUrl;

@@ -1,14 +1,13 @@
-import { createContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
-
-export const AuthContext = createContext(null);
+import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  async function refreshUser(activeToken = token) {
+  const refreshUser = useCallback(async (activeToken = token) => {
     if (!activeToken) {
       setUser(null);
       setLoading(false);
@@ -25,14 +24,14 @@ export function AuthProvider({ children }) {
       if (!res.ok) throw new Error(data.error || "Failed to load user");
 
       setUser(data.user);
-    } catch (e) {
+    } catch {
       localStorage.removeItem("token");
       setToken(null);
       setUser(null);
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
 
   function updateUser(nextUser) {
     setUser(nextUser);
@@ -42,7 +41,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     setLoading(true);
     refreshUser(token);
-  }, [token]);
+  }, [refreshUser, token]);
 
   function login(newToken) {
     localStorage.setItem("token", newToken);
