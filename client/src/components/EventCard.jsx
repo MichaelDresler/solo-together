@@ -24,10 +24,10 @@ export default function EventCard({ event, onOpen }) {
 
       <div className="space-y-3 px-5 py-4">
         <p className="text-sm font-medium text-stone-500">{formatEventStart(event.startDate)}</p>
-        <h3 className="text-[1.25rem] font-semibold tracking-tight text-stone-950">
+        <h3 className="line-clamp-2 text-[1.25rem] font-semibold tracking-tight text-stone-950">
           {event.title || "Untitled event"}
         </h3>
-        <p className="text-sm text-stone-500">{formatEventLocation(event)}</p>
+        <p className="line-clamp-1 text-sm text-stone-500">{formatEventLocation(event)}</p>
       </div>
 
       <div className="border-t border-stone-200 px-5 py-4">

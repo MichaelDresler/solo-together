@@ -25,7 +25,7 @@ export default function SoloAttendeeSummary({
             ))}
 
             {remainingCount > 0 && (
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-stone-200 text-xs font-semibold text-stone-700 shadow-sm">
+              <span className={`${compact ? "h-7 w-7" : "h-[34px] w-[34px]"} shadow-sm inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-stone-200 text-xs font-semibold text-stone-700 shadow-sm}`}>
                 +{remainingCount}
               </span>
             )}

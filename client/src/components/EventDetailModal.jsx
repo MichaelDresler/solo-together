@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  formatEventDateRangeDetail,
-  formatEventLocation,
+  formatEventDateRangeParts,
+  formatEventLocationParts,
 } from "../utils/eventFormatting";
 import { getUserDisplayName } from "../utils/avatar";
 import SoloAttendeeSummary from "./SoloAttendeeSummary";
@@ -68,40 +68,30 @@ export default function EventDetailModal({
   const scrollContainerRef = useRef(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
+  if (!isOpen) return;
 
-    function handleKeyDown(modalEvent) {
-      if (modalEvent.key === "Escape") {
-        onClose();
-      }
-    }
+  function handleKeyDown(e) {
+    if (e.key === "Escape") onClose();
+  }
 
-    const scrollY = window.scrollY;
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousBodyPosition = document.body.style.position;
-    const previousBodyTop = document.body.style.top;
-    const previousBodyWidth = document.body.style.width;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
+  const scrollY = window.scrollY;
 
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    document.addEventListener("keydown", handleKeyDown);
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = "100%";
 
-    return () => {
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      document.body.style.overflow = previousBodyOverflow;
-      document.body.style.position = previousBodyPosition;
-      document.body.style.top = previousBodyTop;
-      document.body.style.width = previousBodyWidth;
-      document.removeEventListener("keydown", handleKeyDown);
-      window.scrollTo(0, scrollY);
-    };
-  }, [isOpen, onClose]);
+  document.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.width = "";
+
+    document.removeEventListener("keydown", handleKeyDown);
+
+    window.scrollTo(0, scrollY);
+  };
+}, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -122,14 +112,12 @@ export default function EventDetailModal({
   const attendeeCount = usingLocalAttendees
     ? attendeeState.attendeeCount
     : event.soloAttendeeCount || 0;
-  const dateTimeLabel = formatEventDateRangeDetail(
+  const dateTimeParts = formatEventDateRangeParts(
     event.startDate,
     event.endDate,
   );
-  const locationLabel = formatEventLocation(event);
-  const showLegacyAddressDetails =
-    !event.location?.address &&
-    Boolean(event.addressLine1 || event.stateOrProvince || event.postalCode);
+  const locationParts = formatEventLocationParts(event);
+  const locationURL = encodeURIComponent(locationParts.mapsQuery);
   const eventPageButton = event._id ? (
     <Link
       to={`/events/${event._id}`}
@@ -290,22 +278,35 @@ export default function EventDetailModal({
 
               <div className="flex flex-col gap-6 border-t border-stone-200 pt-6">
                 <div className="space-y-5">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm text-stone-700">
-                      <CalendarIcon className="mt-0.5 size-8 shrink-0 text-stone-500" />
-                      <p>{dateTimeLabel}</p>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-stone-700">
-                      <PinIcon className="mt-0.5 size-8 shrink-0 text-stone-500" />
-                      <div className="space-y-1">
-                        <p>{locationLabel}</p>
-                        {showLegacyAddressDetails && (
+                  <div className=" grid grid-cols-[1fr_1.4fr] ">
+                    <div className="flex items-start gap-3 text-sm text-stone-700">
+                      <CalendarIcon className="mt-0.5 size-10 shrink-0 text-stone-400" />
+                      <div className="flex flex-col">
+                        <p className="text-base font-semibold text-stone-950">
+                          {dateTimeParts.primaryText}
+                        </p>
+                        {dateTimeParts.secondaryText ? (
                           <p className="text-sm text-stone-500">
-                            {[event.addressLine1, event.stateOrProvince, event.postalCode]
-                              .filter(Boolean)
-                              .join(", ")}
+                            {dateTimeParts.secondaryText}
                           </p>
-                        )}
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1  text-sm text-stone-700">
+                      <PinIcon className="mt-0.5 size-10 shrink-0 text-stone-400" />
+                      <div className="space-y-1">
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${locationURL}`}
+                        >
+                          <p className="text-base font-semibold text-stone-950">
+                            {locationParts.primaryText}
+                          </p>
+                        </a>
+                        {locationParts.secondaryText ? (
+                          <p className="text-sm text-stone-500">
+                            {locationParts.secondaryText}
+                          </p>
+                        ) : null}
                         {event.classification ? (
                           <p className="text-sm font-medium text-stone-500">
                             {event.classification}
@@ -315,24 +316,7 @@ export default function EventDetailModal({
                     </div>
                   </div>
 
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold  text-stone-400">
-                      About
-                    </p>
-                    <p className="text-sm  text-stone-700">
-                      {event.description || "No description available yet."}
-                    </p>
-                  </div>
-                </div>
-
-                <EventMap
-                  lat={event.location?.lat}
-                  lng={event.location?.lng}
-                  address={event.location?.address}
-                />
-
-                <div className="space-y-4">
+                   <div className=" mb-8 bg-black/5 rounded-lg p-4">
                   <div>
                     <p className="text-sm font-semibold text-stone-400">
                       People Going Solo
@@ -370,6 +354,30 @@ export default function EventDetailModal({
                       )}
                     </div>
                   </div>
+                </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold  text-stone-400">
+                      About
+                    </p>
+                    <p className="text-sm  text-stone-700">
+                      {event.description || "No description available yet."}
+                    </p>
+                  </div>
+                </div>
+
+               
+
+                <div>
+                  <p className="text-sm font-semibold pb-4 text-stone-400">
+                    Location
+                  </p>
+
+                  <EventMap
+                    lat={event.location?.lat}
+                    lng={event.location?.lng}
+                    address={event.location?.address}
+                  />
                 </div>
               </div>
             </div>

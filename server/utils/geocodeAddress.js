@@ -6,7 +6,7 @@ export async function geocodeAddress(address) {
   const url =
     `https://api.maptiler.com/geocoding/` +
     `${encodeURIComponent(address)}.json` +
-    `?key=${process.env.MAPTILER_API_KEY}&limit=1&country=ca`;
+    `?key=${process.env.MAPTILER_API_KEY}&limit=1`;
 
   const response = await fetch(url);
 

@@ -2,16 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  month: "short",
+  weekday: "short",
+  month: "long",
   day: "numeric",
-  year: "numeric",
 });
 const TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
   hour: "numeric",
   minute: "2-digit",
 });
 
-const TIME_OPTIONS = Array.from({ length: 25 }, (_, index) => {
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
   const totalMinutes = index * 30;
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -23,6 +23,29 @@ const TIME_OPTIONS = Array.from({ length: 25 }, (_, index) => {
     label: TIME_FORMATTER.format(labelDate),
   };
 });
+
+function getTodayDateValue() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentMonthStart() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
+function getClampedMonthStart(date, currentMonthStart) {
+  if (!date) {
+    return currentMonthStart;
+  }
+
+  const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+  return monthStart < currentMonthStart ? currentMonthStart : monthStart;
+}
 
 function parseDateValue(value) {
   if (!value) return null;
@@ -93,10 +116,10 @@ export default function DateTimeDropdownField({
   const containerRef = useRef(null);
 
   const selectedDate = useMemo(() => parseDateValue(dateValue), [dateValue]);
+  const currentMonthStart = useMemo(() => getCurrentMonthStart(), []);
+  const minDateValue = useMemo(() => getTodayDateValue(), []);
   const [visibleMonth, setVisibleMonth] = useState(() =>
-    selectedDate
-      ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
-      : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    getClampedMonthStart(selectedDate, currentMonthStart)
   );
 
   useEffect(() => {
@@ -125,19 +148,21 @@ export default function DateTimeDropdownField({
 
   const calendarDays = useMemo(() => getCalendarDays(visibleMonth), [visibleMonth]);
   const selectedTime = TIME_OPTIONS.find((option) => option.value === timeValue);
+  const isCurrentMonth =
+    visibleMonth.getFullYear() === currentMonthStart.getFullYear() &&
+    visibleMonth.getMonth() === currentMonthStart.getMonth();
 
   return (
-    <div className="rounded-[1.35rem] border border-stone-200 bg-stone-100/80 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-stone-800">{label}</p>
-        </div>
+    <div
+      ref={containerRef}
+      className="  flex flex-row justify-between  "
+    >
+      <div className=" flex px-2 items-center">
+        <p className="text-sm font-medium text-black/60">{label}</p>
+      </div>
 
-        <div
-          ref={containerRef}
-          className="grid min-w-0 gap-0 overflow-visible rounded-2xl border border-stone-200 bg-white shadow-sm sm:grid-cols-2"
-        >
-          <div className="relative">
+      <div className=" min-w-0 gap-x-[2px] overflow-visible flex flex-row">
+        <div className="relative bg">
             <button
               type="button"
               onClick={() => {
@@ -145,19 +170,19 @@ export default function DateTimeDropdownField({
                   const nextMenu = current === "date" ? null : "date";
 
                   if (nextMenu === "date") {
-                    const baseDate = selectedDate || new Date();
+                    const baseDate = selectedDate && formatDateValue(selectedDate) >= minDateValue
+                      ? selectedDate
+                      : currentMonthStart;
                     setVisibleMonth(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1));
                   }
 
                   return nextMenu;
                 });
               }}
-              className="flex w-full min-w-[11rem] items-center justify-between gap-3 rounded-t-2xl px-4 py-3 text-left transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF5812]/30 sm:rounded-l-2xl sm:rounded-tr-none"
+              className="flex w-full min-w-[8rem] items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF5812]/30 bg-black/4 rounded-l-md"
             >
               <span>
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-stone-400">
-                  Date
-                </span>
+
                 <span className="mt-1 block text-sm font-medium text-stone-800">
                   {selectedDate ? DATE_FORMATTER.format(selectedDate) : "Select date"}
                 </span>
@@ -166,35 +191,47 @@ export default function DateTimeDropdownField({
             </button>
 
             <div
-              className={`absolute left-0 top-full z-30 mt-3 w-[20rem] origin-top-left rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.16)] transition-all duration-200 ${
+              className={`absolute shadow-md left-0 top-full z-30 mt-3 w-[20rem] origin-top-left rounded-[1.35rem]  bg-white p-4  transition-all duration-200 ${
                 openMenu === "date"
                   ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
                   : "pointer-events-none -translate-y-1 scale-95 opacity-0"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setVisibleMonth(
-                      (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1)
-                    )
-                  }
-                  className="inline-flex size-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition hover:border-stone-300 hover:text-stone-800"
-                  aria-label="Previous month"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 16 16"
-                    className="size-4"
-                    aria-hidden="true"
+                {isCurrentMonth ? (
+                  <span className="size-9" aria-hidden="true" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVisibleMonth((current) => {
+                        const previousMonth = new Date(
+                          current.getFullYear(),
+                          current.getMonth() - 1,
+                          1
+                        );
+
+                        return previousMonth < currentMonthStart
+                          ? currentMonthStart
+                          : previousMonth;
+                      })
+                    }
+                    className="inline-flex size-9 items-center justify-center rounded-full  text-stone-500 transition hover:stone-300 hover:text-stone-800"
+                    aria-label="Previous month"
                   >
-                    <path
-                      fill="currentColor"
-                      d="M9.78 12.03a.75.75 0 0 1-1.06 0L4.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 1 1 1.06 1.06L6.06 7.25l3.72 3.72a.75.75 0 0 1 0 1.06"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 16 16"
+                      className="size-4"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M9.78 12.03a.75.75 0 0 1-1.06 0L4.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 1 1 1.06 1.06L6.06 7.25l3.72 3.72a.75.75 0 0 1 0 1.06"
+                      />
+                    </svg>
+                  </button>
+                )}
 
                 <p className="text-sm font-semibold text-stone-900">
                   {visibleMonth.toLocaleString("en-US", {
@@ -210,7 +247,7 @@ export default function DateTimeDropdownField({
                       (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1)
                     )
                   }
-                  className="inline-flex size-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition hover:border-stone-300 hover:text-stone-800"
+                  className="inline-flex size-9 items-center justify-center rounded-full  text-stone-500 transition hover:stone-300 hover:text-stone-800"
                   aria-label="Next month"
                 >
                   <svg
@@ -246,22 +283,26 @@ export default function DateTimeDropdownField({
 
                   const dayValue = formatDateValue(day);
                   const isSelected = dayValue === dateValue;
-                  const isToday = dayValue === formatDateValue(new Date());
+                  const isToday = dayValue === minDateValue;
+                  const isDisabled = dayValue < minDateValue;
 
                   return (
                     <button
                       key={dayValue}
                       type="button"
+                      disabled={isDisabled}
                       onClick={() => {
                         onDateChange(dayValue);
                         setOpenMenu(null);
                       }}
                       className={`inline-flex size-10 items-center justify-center rounded-full text-sm font-medium transition ${
-                        isSelected
-                          ? "bg-stone-900 text-white shadow-sm"
-                          : isToday
-                            ? "border border-stone-300 text-stone-900 hover:border-stone-400 hover:bg-stone-50"
-                            : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+                        isDisabled
+                          ? "cursor-not-allowed text-stone-300"
+                          : isSelected
+                            ? "bg-stone-900 text-white shadow-sm"
+                            : isToday
+                              ? "stone-300 text-stone-900 hover:stone-400 hover:bg-stone-50"
+                              : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
                       }`}
                     >
                       {day.getDate()}
@@ -270,18 +311,16 @@ export default function DateTimeDropdownField({
                 })}
               </div>
             </div>
-          </div>
+        </div>
 
-          <div className="relative border-t border-stone-200 sm:border-l sm:border-t-0">
+        <div className="relative ">
             <button
               type="button"
               onClick={() => setOpenMenu((current) => (current === "time" ? null : "time"))}
-              className="flex w-full min-w-[10rem] items-center justify-between gap-3 rounded-b-2xl px-4 py-3 text-left transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF5812]/30 sm:rounded-r-2xl sm:rounded-bl-none"
+              className="flex w-full min-w-[8rem] items-center justify-between gap-3 px-3 py-2 rounded-r-md text-left transition bg-black/4 hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF5812]/30 "
             >
               <span>
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-stone-400">
-                  Time
-                </span>
+  
                 <span className="mt-1 block text-sm font-medium text-stone-800">
                   {selectedTime ? selectedTime.label : "Select time"}
                 </span>
@@ -290,7 +329,7 @@ export default function DateTimeDropdownField({
             </button>
 
             <div
-              className={`absolute right-0 top-full z-30 mt-3 w-[15rem] origin-top-right rounded-[1.35rem] border border-stone-200 bg-white p-2 shadow-[0_20px_60px_rgba(15,23,42,0.16)] transition-all duration-200 ${
+              className={`absolute right-0 top-full z-30 mt-3 w-[15rem] origin-top-right rounded-[1.35rem]  bg-white shadow-md p-2  transition-all duration-200 ${
                 openMenu === "time"
                   ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
                   : "pointer-events-none -translate-y-1 scale-95 opacity-0"
@@ -331,7 +370,6 @@ export default function DateTimeDropdownField({
                 ))}
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>

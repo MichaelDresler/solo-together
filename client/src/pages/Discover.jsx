@@ -83,7 +83,7 @@ export default function Discover() {
       {err && <p className="text-red-600">{err}</p>}
 
       <h1 className="text-3xl font-bold capitalize">Discover new events</h1>
-      <h2 className="pb-12 text-black/60">Explore popular events near you, browse by category, or check out some of the great community calendars.</h2>
+      <h2 className="pb-12 font-medium text-black/60">Explore popular events near you, browse by category, or check out some of the great community calendars.</h2>
       <div className="flex gap-4">
         <div className="flex flex-col">
           <label htmlFor="sort">Sort</label>

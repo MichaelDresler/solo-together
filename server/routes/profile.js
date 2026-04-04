@@ -128,6 +128,8 @@ router.patch("/me", auth, async (req, res) => {
   try {
     const firstName = req.body.firstName?.trim();
     const lastName = req.body.lastName?.trim();
+    const hasAvatarUrl = typeof req.body.avatarUrl === "string";
+    const avatarUrl = hasAvatarUrl ? req.body.avatarUrl.trim() : null;
 
     if (!firstName || !lastName) {
       return res.status(400).json({
@@ -135,20 +137,34 @@ router.patch("/me", auth, async (req, res) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      {
-        firstName,
-        lastName,
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    const user = await User.findById(req.userId);
 
     if (!user) {
       return res.status(404).json({ error: "user not found" });
+    }
+
+    const previousAvatarPublicId = user.avatarPublicId;
+    const shouldClearManagedAvatar =
+      hasAvatarUrl &&
+      avatarUrl !== user.avatarUrl &&
+      Boolean(previousAvatarPublicId);
+
+    user.firstName = firstName;
+    user.lastName = lastName;
+
+    if (hasAvatarUrl) {
+      user.avatarUrl = avatarUrl;
+      user.avatarPublicId = "";
+    }
+
+    await user.save();
+
+    if (shouldClearManagedAvatar) {
+      try {
+        await deleteCloudinaryAsset(previousAvatarPublicId);
+      } catch (error) {
+        console.log("failed to delete old avatar", error);
+      }
     }
 
     return res.json({ user: serializeUserProfile(user) });

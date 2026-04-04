@@ -8,8 +8,8 @@ import { getUserDisplayName } from "../utils/avatar";
 import EventSettingsMenu from "../components/EventSettingsMenu";
 import EventMap from "../components/EventMap";
 import {
-  formatEventDateRangeDetail,
-  formatEventLocation,
+  formatEventDateRangeParts,
+  formatEventLocationParts,
 } from "../utils/eventFormatting";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 
@@ -126,11 +126,9 @@ export default function EventDetail() {
   const attendeeCount = usingLocalAttendees
     ? attendeeState.attendeeCount
     : (event.soloAttendeeCount || 0);
-  const dateTimeLabel = formatEventDateRangeDetail(event.startDate, event.endDate);
-  const locationLabel = formatEventLocation(event);
-  const showLegacyAddressDetails =
-    !event.location?.address &&
-    Boolean(event.addressLine1 || event.stateOrProvince || event.postalCode);
+  const dateTimeParts = formatEventDateRangeParts(event.startDate, event.endDate);
+  const locationParts = formatEventLocationParts(event);
+  const locationURL = encodeURIComponent(locationParts.mapsQuery);
 
   return (
     <main className="w-full px-4  sm:px-6  lg:px-8">
@@ -222,22 +220,35 @@ export default function EventDetail() {
 
                 <div className="flex flex-col gap-6 border-t border-stone-200 pt-6">
                   <div className="space-y-5">
-                    <div className="space-y-3">
+                    <div className=" grid grid-cols-[1fr_1.4fr] ">
                       <div className="flex items-start gap-3 text-sm text-stone-700">
-                        <CalendarIcon className="mt-0.5 size-4 shrink-0 text-stone-500" />
-                        <p>{dateTimeLabel}</p>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-stone-700">
-                        <PinIcon className="mt-0.5 size-4 shrink-0 text-stone-500" />
-                        <div className="space-y-1">
-                          <p>{locationLabel}</p>
-                          {showLegacyAddressDetails && (
+                        <CalendarIcon className="mt-0.5 size-10 shrink-0 text-stone-400" />
+                        <div className="flex flex-col">
+                          <p className="text-base font-semibold text-stone-950">
+                            {dateTimeParts.primaryText}
+                          </p>
+                          {dateTimeParts.secondaryText ? (
                             <p className="text-sm text-stone-500">
-                              {[event.addressLine1, event.stateOrProvince, event.postalCode]
-                                .filter(Boolean)
-                                .join(", ")}
+                              {dateTimeParts.secondaryText}
                             </p>
-                          )}
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-1  text-sm text-stone-700">
+                        <PinIcon className="mt-0.5 size-10 shrink-0 text-stone-400" />
+                        <div className="space-y-1">
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${locationURL}`}
+                          >
+                            <p className="text-base font-semibold text-stone-950">
+                              {locationParts.primaryText}
+                            </p>
+                          </a>
+                          {locationParts.secondaryText ? (
+                            <p className="text-sm text-stone-500">
+                              {locationParts.secondaryText}
+                            </p>
+                          ) : null}
                           {event.classification ? (
                             <p className="text-sm font-medium text-stone-500">
                               {event.classification}
@@ -247,26 +258,9 @@ export default function EventDetail() {
                       </div>
                     </div>
 
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold text-stone-400">
-                        About
-                      </p>
-                      <p className="text-sm text-stone-700">
-                        {event.description || "No description available yet."}
-                      </p>
-                    </div>
-                  </div>
-
-                  <EventMap
-                    lat={event.location?.lat}
-                    lng={event.location?.lng}
-                    address={event.location?.address}
-                  />
-
-                  <div className="space-y-4">
+                     <div className="space-y-4 bg-black/5 rounded-lg p-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
+                      <p className="text-sm font-semibold text-stone-400">
                         People Going Solo
                       </p>
                       <div className="mt-3 space-y-3">
@@ -291,6 +285,30 @@ export default function EventDetail() {
                         />
                       </div>
                     </div>
+                  </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-stone-400">
+                        About
+                      </p>
+                      <p className="text-sm text-stone-700">
+                        {event.description || "No description available yet."}
+                      </p>
+                    </div>
+                  </div>
+
+                 
+
+                  <div>
+                    <p className="text-sm font-semibold pb-4 text-stone-400">
+                      Location
+                    </p>
+
+                    <EventMap
+                      lat={event.location?.lat}
+                      lng={event.location?.lng}
+                      address={event.location?.address}
+                    />
                   </div>
                 </div>
               </div>

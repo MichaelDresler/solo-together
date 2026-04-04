@@ -3,6 +3,7 @@ import auth from "../middleware/auth.js";
 import Event from "../models/Event.js";
 import SoloAttendance from "../models/SoloAttendance.js";
 import User from "../models/User.js";
+import { deleteCloudinaryAsset } from "../utils/cloudinary.js";
 import { serializeUserProfile } from "../utils/profile.js";
 
 const router = express.Router();
@@ -129,6 +130,44 @@ router.delete("/members/:id", auth, requireAdmin, async (req, res) => {
     await User.findByIdAndDelete(user._id);
 
     return res.json({ message: "member deleted successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "server error" });
+  }
+});
+
+router.delete("/events", auth, async (req, res) => {
+  try {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "event reset is disabled in production" });
+    }
+
+    const eventsWithImages = await Event.find({
+      imagePublicId: { $type: "string", $ne: "" },
+    }).select("imagePublicId");
+
+    for (const event of eventsWithImages) {
+      try {
+        await deleteCloudinaryAsset(event.imagePublicId);
+      } catch (error) {
+        console.log("failed to delete event image during bulk reset", {
+          eventId: event._id?.toString(),
+          imagePublicId: event.imagePublicId,
+          error: error.message,
+        });
+      }
+    }
+
+    const [eventResult, soloResult] = await Promise.all([
+      Event.deleteMany({}),
+      SoloAttendance.deleteMany({}),
+    ]);
+
+    return res.json({
+      message: "all events deleted successfully",
+      deletedEvents: eventResult.deletedCount || 0,
+      deletedSoloAttendance: soloResult.deletedCount || 0,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: "server error" });

@@ -16,9 +16,9 @@ export default function EventMap({ lat, lng, address = "" }) {
     <MapContainer
       center={center}
       zoom={14}
-      className="rounded-2xl"
+      className="rounded-2xl z-0"
       style={{ height: "300px", width: "100%" }}
-      scrollWheelZoom={true}
+      scrollWheelZoom={false}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

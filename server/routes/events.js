@@ -59,7 +59,6 @@ function normalizeEventPayload(payload) {
     description: payload.description?.trim() || "",
     startDate: payload.startDate ? new Date(payload.startDate) : null,
     endDate: payload.endDate ? new Date(payload.endDate) : null,
-    locationName: payload.locationName?.trim() || "",
     addressLine1: payload.addressLine1?.trim() || "",
     city: payload.city?.trim() || "",
     stateOrProvince: payload.stateOrProvince?.trim() || "",
@@ -67,8 +66,11 @@ function normalizeEventPayload(payload) {
     country: payload.country?.trim() || "",
     imageUrl: payload.imageUrl?.trim() || "",
     externalUrl: payload.externalUrl?.trim() || "",
-    classification: payload.classification?.trim() || "",
   };
+}
+
+function normalizeTicketmasterTitle(title) {
+  return title?.trim().toLowerCase() || "";
 }
 
 function parseLocationInput(payload) {
@@ -157,6 +159,14 @@ function isValidDate(value) {
   return value instanceof Date && Number.isFinite(value.valueOf());
 }
 
+function hasValidEventLocation(location) {
+  return (
+    Boolean(location?.address?.trim()) &&
+    Number.isFinite(location?.lat) &&
+    Number.isFinite(location?.lng)
+  );
+}
+
 function getEventOwnerId(event) {
   return event.createdBy?.toString() || event.userId?.toString() || null;
 }
@@ -190,6 +200,7 @@ async function findOrCreateTicketmasterEvent(payload) {
     imageUrl = "",
     externalUrl = "",
   } = payload;
+  const normalizedTitle = normalizeTicketmasterTitle(title);
 
   const locationAddress = buildAddressFromParts([
     addressLine1,
@@ -216,11 +227,13 @@ async function findOrCreateTicketmasterEvent(payload) {
       externalId,
     },
     {
+      $set: {
+        title: normalizedTitle,
+      },
       $setOnInsert: {
         source: "ticketmaster",
         externalSource: "ticketmaster",
         externalId,
-        title,
         description,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
@@ -426,8 +439,9 @@ router.patch("/:id", auth, handleEventImageUpload, async (req, res) => {
           event.postalCode,
           event.country,
         ]) || event.location?.address || "";
+      const needsLocationRepair = !hasValidEventLocation(event.location);
 
-      if (locationAddress !== currentLocationAddress) {
+      if (locationAddress !== currentLocationAddress || needsLocationRepair) {
         let geocodedLocation;
 
         try {
@@ -477,7 +491,11 @@ router.patch("/:id", auth, handleEventImageUpload, async (req, res) => {
 
     return res.json(populatedEvent);
   } catch (e) {
-    console.log(e);
+    console.log("failed to update event", {
+      eventId: req.params.id,
+      error: e.message,
+      validationErrors: e?.errors ? Object.keys(e.errors) : [],
+    });
 
     if (uploadedEventImage?.imagePublicId) {
       try {
@@ -510,8 +528,9 @@ router.post("/import-ticketmaster", auth, async (req, res) => {
       imageUrl,
       externalUrl,
     } = req.body;
+    const normalizedTitle = normalizeTicketmasterTitle(title);
 
-    if (!externalId || !title) {
+    if (!externalId || !normalizedTitle) {
       return res.status(400).json({
         error: "externalId and title are required",
       });
@@ -522,7 +541,7 @@ router.post("/import-ticketmaster", auth, async (req, res) => {
     try {
       event = await findOrCreateTicketmasterEvent({
         externalId,
-        title,
+        title: normalizedTitle,
         description,
         startDate,
         endDate,

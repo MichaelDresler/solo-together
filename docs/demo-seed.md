@@ -1,13 +1,13 @@
 # Demo Seed Guide
 
-This repo includes a deterministic local demo seeder for users, events, and going-solo attendance.
+This repo includes a local demo seeder for users, events, and going-solo attendance.
 
 ## What it does
 
-- Creates or reuses 12 demo users through the existing auth API
-- Creates or reuses 36 demo events through the existing events API
-- Creates or reuses a spread of going-solo attendance across seeded events
-- Uses stable usernames, event titles, and a shared password so you can rerun the command safely
+- Creates or reuses 12 demo users through the existing auth API and refreshes their avatar URLs
+- Deletes all current events and existing going-solo attendance, then recreates 36 demo events
+- Rebuilds the scripted going-solo attendance set from scratch
+- Uses stable usernames, event titles, image URLs, and a shared password so reruns converge to the same demo dataset
 
 The seeded event titles begin with `[Seed Demo]` so they are easy to recognize in the UI and database.
 
@@ -40,9 +40,9 @@ SEED_API_BASE_URL=http://localhost:5001 npm run seed:demo
 ## Rerun behavior
 
 - Users are created once and then logged into on later runs
-- Events are matched by seeded title plus owner username
-- Going-solo links are checked before creating new ones
-- Rerunning the command refreshes the same demo dataset instead of endlessly duplicating it
+- User names and avatar URLs are refreshed on each run
+- All current events are deleted on each run before the demo events are recreated
+- All going-solo links are deleted and then recreated from the scripted attendance plan
 
 ## Demo login credentials
 
@@ -73,4 +73,5 @@ Accounts:
 
 - This is intended for local/demo environments only
 - The script uses the existing app API instead of writing directly to MongoDB
+- Event reset is disabled when the backend is running in `production`
 - If you want a different dataset size later, update [`scripts/seed-demo-data.mjs`](/Users/michael/para/projects/solo-together/scripts/seed-demo-data.mjs)

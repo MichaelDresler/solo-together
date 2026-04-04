@@ -11,15 +11,23 @@ const emptyFormValues = {
   description: "",
   startDate: "",
   endDate: "",
-  locationName: "",
   addressLine1: "",
   city: "",
   stateOrProvince: "",
   postalCode: "",
   country: "",
+  imageUrl: "",
   externalUrl: "",
-  classification: "",
 };
+
+function getTodayDateValue() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 function buildLocationAddress(values) {
   return [
@@ -51,6 +59,17 @@ function getDateSelectionParts(value) {
     return { date: "", time: "" };
   }
 
+  if (typeof value === "string") {
+    const matchedDate = value.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}))?/);
+
+    if (matchedDate) {
+      return {
+        date: matchedDate[1],
+        time: matchedDate[2] || "",
+      };
+    }
+  }
+
   const eventDate = new Date(value);
 
   if (Number.isNaN(eventDate.valueOf())) {
@@ -65,20 +84,32 @@ function getDateSelectionParts(value) {
 
 function getInitialFormValues(initialValues) {
   const locationAddress = initialValues?.location?.address?.trim() || "";
+  const today = getTodayDateValue();
 
   return {
     ...emptyFormValues,
     ...initialValues,
     addressLine1: initialValues?.addressLine1 || locationAddress,
-    startDate: initialValues?.startDate || "",
-    endDate: initialValues?.endDate || "",
+    startDate: initialValues?.startDate || today,
+    endDate: initialValues?.endDate || today,
+    imageUrl: initialValues?.imageUrl || "",
   };
 }
 
 function getInitialDateTimeSelections(initialValues) {
+  const today = getTodayDateValue();
+  const startSelection = getDateSelectionParts(initialValues?.startDate);
+  const endSelection = getDateSelectionParts(initialValues?.endDate);
+
   return {
-    start: getDateSelectionParts(initialValues?.startDate),
-    end: getDateSelectionParts(initialValues?.endDate),
+    start: {
+      date: startSelection.date || today,
+      time: startSelection.time,
+    },
+    end: {
+      date: endSelection.date || today,
+      time: endSelection.time,
+    },
   };
 }
 
@@ -90,9 +121,11 @@ export default function CreateEvent({
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const imageInputRef = useRef(null);
-  const [formValues, setFormValues] = useState(() => getInitialFormValues(initialValues));
+  const [formValues, setFormValues] = useState(() =>
+    getInitialFormValues(initialValues),
+  );
   const [dateTimeSelections, setDateTimeSelections] = useState(() =>
-    getInitialDateTimeSelections(initialValues)
+    getInitialDateTimeSelections(initialValues),
   );
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -119,16 +152,16 @@ export default function CreateEvent({
   }, [selectedImage]);
 
   const submitLabel = mode === "edit" ? "Save Changes" : "Create Event";
-  const heading = mode === "edit" ? "Update Event Details" : "Basic Information";
+  const heading =
+    mode === "edit" ? "Update Event Details" : "Basic Information";
   const description = useMemo(
     () =>
       mode === "edit"
         ? "Edit the event and keep the listing current."
         : "Add the core details people need before they decide to join.",
-    [mode]
+    [mode],
   );
-  const existingImageUrl = initialValues?.imageUrl || "";
-  const previewImageUrl = imagePreviewUrl || existingImageUrl;
+  const previewImageUrl = imagePreviewUrl || formValues.imageUrl;
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -148,7 +181,10 @@ export default function CreateEvent({
 
       setFormValues((currentValues) => ({
         ...currentValues,
-        [`${field}Date`]: buildDateTimeValue(nextFieldSelection.date, nextFieldSelection.time),
+        [`${field}Date`]: buildDateTimeValue(
+          nextFieldSelection.date,
+          nextFieldSelection.time,
+        ),
       }));
 
       return {
@@ -226,7 +262,7 @@ export default function CreateEvent({
         "location",
         JSON.stringify({
           address: locationAddress,
-        })
+        }),
       );
 
       if (selectedImage) {
@@ -244,7 +280,9 @@ export default function CreateEvent({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || `Failed to ${isEditing ? "update" : "create"} event`);
+        throw new Error(
+          data.error || `Failed to ${isEditing ? "update" : "create"} event`,
+        );
       }
 
       navigate(`/events/${data._id}`, {
@@ -256,7 +294,8 @@ export default function CreateEvent({
       });
     } catch (submitError) {
       setError(
-        submitError.message || `Failed to ${mode === "edit" ? "update" : "create"} event`
+        submitError.message ||
+          `Failed to ${mode === "edit" ? "update" : "create"} event`,
       );
     } finally {
       setSaving(false);
@@ -264,165 +303,13 @@ export default function CreateEvent({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6  ">
       <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-stone-900">{heading}</h2>
-          <p className="text-sm text-stone-600">{description}</p>
-        </div>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">Title</span>
-          <input
-            name="title"
-            value={formValues.title}
-            onChange={handleChange}
-            required
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="Indie night at The Pearl"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">Description</span>
-          <textarea
-            name="description"
-            value={formValues.description}
-            onChange={handleChange}
-            rows="5"
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="Share what the event is, who should come, and any useful context."
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">Classification</span>
-          <input
-            name="classification"
-            value={formValues.classification}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="Concert, comedy, sports, meetup"
-          />
-        </label>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-stone-900">Date and Time</h2>
-          <p className="text-sm text-stone-600">
-            Start and end time are optional, but they improve event browsing.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:col-span-2">
-          <DateTimeDropdownField
-            label="Start"
-            dateValue={dateTimeSelections.start.date}
-            timeValue={dateTimeSelections.start.time}
-            onDateChange={(value) => handleDateTimeSelection("start", "date", value)}
-            onTimeChange={(value) => handleDateTimeSelection("start", "time", value)}
-          />
-
-          <DateTimeDropdownField
-            label="End"
-            dateValue={dateTimeSelections.end.date}
-            timeValue={dateTimeSelections.end.time}
-            onDateChange={(value) => handleDateTimeSelection("end", "date", value)}
-            onTimeChange={(value) => handleDateTimeSelection("end", "time", value)}
-          />
-        </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">Venue</span>
-          <input
-            name="locationName"
-            value={formValues.locationName}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="The Pearl"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">Address</span>
-          <input
-            name="addressLine1"
-            value={formValues.addressLine1}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="123 Main Street"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">City</span>
-          <input
-            name="city"
-            value={formValues.city}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="Vancouver"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">State / Province</span>
-          <input
-            name="stateOrProvince"
-            value={formValues.stateOrProvince}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="BC"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">Postal Code</span>
-          <input
-            name="postalCode"
-            value={formValues.postalCode}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="V6B 1A1"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-stone-700">Country</span>
-          <input
-            name="country"
-            value={formValues.country}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="Canada"
-          />
-        </label>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        <label className="block space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-stone-700">External URL</span>
-          <input
-            name="externalUrl"
-            value={formValues.externalUrl}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            placeholder="https://..."
-          />
-        </label>
-      </section>
-
-      <section className="space-y-3">
         <div>
           <h2 className="text-lg font-semibold text-stone-900">Event Banner</h2>
           <p className="text-sm text-stone-600">
-            Upload an image to help the event stand out in the feed.
+            Upload an image or paste a web image URL to help the event stand out
+            in the feed.
           </p>
         </div>
 
@@ -437,10 +324,10 @@ export default function CreateEvent({
           }}
           onDragLeave={() => setIsDraggingImage(false)}
           onDrop={handleImageDrop}
-          className={`rounded-2xl border border-dashed p-6 transition ${
+          className={`rounded-2xl border border-dashed  p-6 transition cursor-pointer ${
             isDraggingImage
-              ? "border-stone-500 bg-stone-50"
-              : "border-stone-300 bg-white hover:border-stone-400"
+              ? "border-black/50 bg-black/10"
+              : "bg-black/5 border-black/10  hover:border-black/40"
           }`}
         >
           <input
@@ -464,6 +351,18 @@ export default function CreateEvent({
             </div>
           ) : (
             <div className="space-y-2 text-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="black"
+                className="size-8 mx-auto opacity-40 mb-4"
+              >
+
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+              </svg>
+
               <p className="text-sm font-medium text-stone-700">
                 Drop an image here or click to upload
               </p>
@@ -471,6 +370,162 @@ export default function CreateEvent({
             </div>
           )}
         </div>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">Image URL</span>
+          <input
+            type="url"
+            name="imageUrl"
+            value={formValues.imageUrl}
+            onChange={handleChange}
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:he-stone-500"
+            placeholder="https://..."
+          />
+        </label>
+
+        <div>
+          <h2 className="text-lg font-semibold text-stone-900">{heading}</h2>
+          <p className="text-sm text-stone-600">{description}</p>
+        </div>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">Title</span>
+          <input
+            name="title"
+            value={formValues.title}
+            onChange={handleChange}
+            required
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:-stone-500"
+            placeholder="Indie night at The Pearl"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">
+            Description
+          </span>
+          <textarea
+            name="description"
+            value={formValues.description}
+            onChange={handleChange}
+            rows="5"
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:-stone-500"
+            placeholder="Share what the event is, who should come, and any useful context."
+          />
+        </label>
+      </section>
+
+      <section className="">
+        <div className="space-y-2 pb-4">
+          <h2 className="text-lg font-semibold text-stone-900">
+            Date and Time
+          </h2>
+          <p className="text-sm text-stone-600">
+            Start and end time are optional, but they improve event browsing.
+          </p>
+        </div>
+
+        <div className="flex flex-col rounded-lg  p-1.5 gap-1 bg-black/5">
+          <DateTimeDropdownField
+            label="Start"
+            dateValue={dateTimeSelections.start.date}
+            timeValue={dateTimeSelections.start.time}
+            onDateChange={(value) =>
+              handleDateTimeSelection("start", "date", value)
+            }
+            onTimeChange={(value) =>
+              handleDateTimeSelection("start", "time", value)
+            }
+          />
+
+          <DateTimeDropdownField
+            label="End"
+            dateValue={dateTimeSelections.end.date}
+            timeValue={dateTimeSelections.end.time}
+            onDateChange={(value) =>
+              handleDateTimeSelection("end", "date", value)
+            }
+            onTimeChange={(value) =>
+              handleDateTimeSelection("end", "time", value)
+            }
+          />
+        </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">Address</span>
+          <input
+            name="addressLine1"
+            value={formValues.addressLine1}
+            onChange={handleChange}
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:-stone-500"
+            placeholder="123 Main Street"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">City</span>
+          <input
+            name="city"
+            value={formValues.city}
+            onChange={handleChange}
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:-stone-500"
+            placeholder="Vancouver"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">
+            State / Province
+          </span>
+          <input
+            name="stateOrProvince"
+            value={formValues.stateOrProvince}
+            onChange={handleChange}
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:-stone-500"
+            placeholder="BC"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">
+            Postal Code
+          </span>
+          <input
+            name="postalCode"
+            value={formValues.postalCode}
+            onChange={handleChange}
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:-stone-500"
+            placeholder="V6B 1A1"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-stone-700">Country</span>
+          <input
+            name="country"
+            value={formValues.country}
+            onChange={handleChange}
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:-stone-500"
+            placeholder="Canada"
+          />
+        </label>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <label className="block space-y-2 md:col-span-2">
+          <span className="text-sm font-medium text-stone-700">
+            External URL
+          </span>
+          <input
+            name="externalUrl"
+            value={formValues.externalUrl}
+            onChange={handleChange}
+            className="w-full rounded-xl  bg-black/5 px-4 py-3 text-sm outline-none transition focus:-stone-500"
+            placeholder="https://..."
+          />
+        </label>
       </section>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -479,7 +534,7 @@ export default function CreateEvent({
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex rounded-xl bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex justify-center rounded-lg w-full bg-green-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Saving..." : submitLabel}
         </button>
