@@ -261,11 +261,9 @@ export default function EventDetailModal({
 
           <div className="px-6 py-6 md:px-8">
             <div className="space-y-6">
+              
               <div className="space-y-2">
-                <h2 className="text-3xl font-semibold tracking-tight text-stone-950">
-                  {event.title || "Untitled event"}
-                </h2>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="mb-4 flex flex-wrap items-center gap-2">
                   {event.source ? (
                     <span className="rounded-full bg-stone-100 px-3 py-1 text-[14px] font-semibold capitalize text-stone-500">
                       {event.source}
@@ -278,6 +276,10 @@ export default function EventDetailModal({
                     onChange={onEventChange}
                   />
                 </div>
+                <h2 className="text-3xl font-semibold tracking-tight text-stone-950">
+                  {event.title || "Untitled event"}
+                </h2>
+                
                 <div>
                   {owner ? (
                     <div className="mt-3 flex items-center gap-2">

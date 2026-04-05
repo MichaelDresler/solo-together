@@ -217,12 +217,8 @@ export default function EventDetail() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <h1 className="text-3xl font-semibold tracking-tight text-stone-950">
-                          {event.title || "Untitled event"}
-                        </h1>
-                        {event.source ? (
+                    <div className="space-y-4">
+                       {event.source ? (
                           <span className="rounded-full bg-stone-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-stone-500">
                             {event.source}
                           </span>
@@ -237,6 +233,12 @@ export default function EventDetail() {
                             }))
                           }
                         />
+                      <div className="flex flex-wrap items-center gap-3">
+                        
+                        <h1 className="text-3xl font-semibold tracking-tight text-stone-950">
+                          {event.title || "Untitled event"}
+                        </h1>
+                       
                       </div>
 
                       <div>

@@ -10,7 +10,7 @@ export default function EventCard({
   onEventChange = null,
 }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-black/8 bg-white transition duration-200 hover:bg-white/20">
+    <article className="overflow-hidden rounded-2xl border border-black/8 bg-white transition duration-200 hover:bg-white/20 flex flex-col justify-between">
       <div className="relative">
         <button
           type="button"
@@ -31,7 +31,7 @@ export default function EventCard({
             </div>
           )}
 
-          <div className="space-y-3 px-5 py-4">
+          <div className="space-y-3 px-5 py-4 ">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-stone-500">
                 {formatEventStart(event.startDate)}
@@ -42,7 +42,7 @@ export default function EventCard({
                 </span>
               ) : null} */}
             </div>
-            <h3 className="line-clamp-2 text-[1.25rem] font-semibold tracking-tight text-stone-950">
+            <h3 className="line-clamp-2 h-15 text-[1.25rem] font-semibold tracking-tight text-stone-950">
               {event.title || "Untitled event"}
             </h3>
 
