@@ -264,22 +264,13 @@ export default function Nav({ onOpenSearch }) {
                 Settings
               </Link>
               {showAdminLink ? (
-                <>
-                  <Link
-                    to="/admin/events"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
-                  >
-                    Manage events
-                  </Link>
-                  <Link
-                    to="/admin/members"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
-                  >
-                    Manage members
-                  </Link>
-                </>
+                <Link
+                  to="/admin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                >
+                  Admin
+                </Link>
               ) : null}
               <button
                 type="button"

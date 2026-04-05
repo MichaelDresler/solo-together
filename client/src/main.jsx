@@ -1,11 +1,11 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Navigate, createBrowserRouter, RouterProvider } from "react-router-dom";
 import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootLayout from "./layout/RootLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
@@ -16,9 +16,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import SearchResults from "./pages/SearchResults";
 import EditEventPage from "./pages/EditEventPage";
-import AdminMembers from "./pages/AdminMembers";
-import AdminEvents from "./pages/AdminEvents";
-
+import Admin from "./pages/Admin";
 
 const router = createBrowserRouter([
   {
@@ -82,10 +80,18 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "admin",
+        element: (
+          <ProtectedRoute>
+            <Admin />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "admin/members",
         element: (
           <ProtectedRoute>
-            <AdminMembers />
+            <Navigate to="/admin?tab=members" replace />
           </ProtectedRoute>
         ),
       },
@@ -93,7 +99,7 @@ const router = createBrowserRouter([
         path: "admin/events",
         element: (
           <ProtectedRoute>
-            <AdminEvents />
+            <Navigate to="/admin?tab=events" replace />
           </ProtectedRoute>
         ),
       },
