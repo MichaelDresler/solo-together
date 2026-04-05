@@ -279,21 +279,27 @@ export default function EventDetail() {
                           attendees={attendees}
                           count={attendeeCount}
                         />
-                        <GoingSoloButton
-                          localEventId={event._id}
-                          attendees={attendees}
-                          attendeeCount={attendeeCount}
-                          onAttendeesChange={(nextAttendees) => {
-                            setAttendeeState({
-                              eventKey,
-                              attendees: nextAttendees,
-                              attendeeCount: nextAttendees.length,
-                            });
-                          }}
-                          fullWidth
-                          showAttendeeSummary={false}
-                          showOpenEventPage={false}
-                        />
+                        {token ? (
+                          <GoingSoloButton
+                            localEventId={event._id}
+                            attendees={attendees}
+                            attendeeCount={attendeeCount}
+                            onAttendeesChange={(nextAttendees) => {
+                              setAttendeeState({
+                                eventKey,
+                                attendees: nextAttendees,
+                                attendeeCount: nextAttendees.length,
+                              });
+                            }}
+                            fullWidth
+                            showAttendeeSummary={false}
+                            showOpenEventPage={false}
+                          />
+                        ) : (
+                          <p className="text-sm text-stone-500">
+                            Log in to join this event solo.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

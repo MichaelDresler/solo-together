@@ -93,29 +93,23 @@ export default function Profile() {
   }
 
   return (
-    <main className="w-full p-6">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+    <main className="w-full  ">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <header className="">
           <div className="flex flex-col gap-5 md:flex-row md:items-center">
             <UserAvatar
               user={displayedUser}
-              size={128}
+              size={120}
               className="h-32 w-32 ring-4 ring-stone-100"
               textClassName="text-3xl"
             />
 
             <div className="space-y-1">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
-                Profile
-              </p>
-              <h1 className="text-3xl font-bold text-stone-900">
+
+              <h1 className="text-3xl capitalize tracking-tight font-bold text-stone-900">
                 {getUserDisplayName(displayedUser)}
               </h1>
               <p className="text-sm text-stone-600">@{displayedUser?.username}</p>
-              <p className="text-sm text-stone-500">
-                Your hosted events and solo plans, with upcoming events shown
-                first.
-              </p>
             </div>
           </div>
         </header>
@@ -126,11 +120,11 @@ export default function Profile() {
           </div>
         )}
 
-        <section className="space-y-6">
-          <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <section className="space-y-6  ">
+          <div className="space-y-4 border-t py-8 border-black/15  ">
             <div className="space-y-1">
               <h2 className="text-xl font-semibold text-stone-900">
-                Events You Created
+                Hosting
               </h2>
               <p className="text-sm text-stone-600">
                 These are the events you are currently hosting.
@@ -146,14 +140,11 @@ export default function Profile() {
             )}
           </div>
 
-          <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+          <div className="space-y-4 border-t pt-8 border-black/15 ">
             <div className="space-y-1">
               <h2 className="text-xl font-semibold text-stone-900">
                 Events You&apos;re Soloing
               </h2>
-              <p className="text-sm text-stone-600">
-                These are the events you have joined as a solo attendee.
-              </p>
             </div>
 
             {soloingEvents.length > 0 ? (

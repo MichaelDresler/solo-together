@@ -224,7 +224,7 @@ export default function Discover() {
           >
             <option value="all">All sources</option>
             <option value="internal">SoloTogether</option>
-            <option value="ticketmaster">Ticketmaster import</option>
+            <option value="ticketmaster">Ticketmaster </option>
           </select>
         </div>
       </div>

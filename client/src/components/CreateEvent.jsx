@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/auth-context";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 import DateTimeDropdownField from "./DateTimeDropdownField";
+import ImageUploadDropzone from "./ImageUploadDropzone";
 
 const MAX_EVENT_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -315,10 +316,11 @@ export default function CreateEvent({
           </p>
         </div>
 
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => imageInputRef.current?.click()}
+        <ImageUploadDropzone
+          inputRef={imageInputRef}
+          previewImageUrl={previewImageUrl}
+          isDragging={isDraggingImage}
+          onOpen={() => imageInputRef.current?.click()}
           onKeyDown={handleImageKeyDown}
           onDragOver={(event) => {
             event.preventDefault();
@@ -326,52 +328,10 @@ export default function CreateEvent({
           }}
           onDragLeave={() => setIsDraggingImage(false)}
           onDrop={handleImageDrop}
-          className={`rounded-2xl border border-dashed  p-6 transition cursor-pointer ${
-            isDraggingImage
-              ? "border-black/50 bg-black/10"
-              : "bg-black/5 border-black/10  hover:border-black/40"
-          }`}
-        >
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageInputChange}
-          />
-
-          {previewImageUrl ? (
-            <div className="space-y-4">
-              <img
-                src={previewImageUrl}
-                alt="Event preview"
-                className="h-56 w-full rounded-xl object-cover"
-              />
-              <p className="text-sm text-stone-600">
-                Click or drop a new image here to replace the current banner.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2 text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="black"
-                className="size-8 mx-auto opacity-40 mb-4"
-              >
-
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-              </svg>
-
-              <p className="text-sm font-medium text-stone-700">
-                Drop an image here or click to upload
-              </p>
-              <p className="text-xs text-stone-500">PNG, JPG, WEBP up to 5MB</p>
-            </div>
-          )}
-        </div>
+          onInputChange={handleImageInputChange}
+          previewAlt="Event preview"
+          previewHint="Click or drop a new image here to replace the current banner."
+        />
 
         <label className="block space-y-2">
           <span className="text-sm font-medium text-stone-700">Image URL</span>
