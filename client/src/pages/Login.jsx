@@ -87,15 +87,13 @@ export default function Login() {
 
       {/* Right login panel */}
       <div className="flex-1 flex flex-col justify-center items-center px-6 py-12">
-        {/* Mobile logo */}
-        <div className="lg:hidden flex items-center gap-2 mb-10">
-          <div className="w-7 h-7 rounded-md bg-amber-400" />
-          <span className="font-semibold text-lg tracking-tight text-stone-900">
-            Acme
-          </span>
-        </div>
+
 
         <div className="w-full max-w-sm">
+                  <div className="lg:hidden flex gap-2 mb-10">
+          <div className="w-7 h-7 rounded-md bg-orange-400" />
+          <span className="font-semibold text-lg tracking-tight text-stone-900">SoloTogether</span>
+        </div>
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-stone-900 tracking-tight">
@@ -153,7 +151,7 @@ export default function Login() {
                   name="identifier"
                   type="text"
                   autoComplete="username"
-                  placeholder="you@company.com or jamiekim92"
+                  placeholder="you@company.com"
                   onFocus={() => setFocused("username")}
                   onBlur={() => setFocused(null)}
                   className="w-full pl-10 pr-4 py-3 bg-transparent text-stone-900 placeholder-stone-400 text-sm rounded-xl focus:outline-none"
@@ -167,12 +165,12 @@ export default function Login() {
                 <label className="block text-sm font-medium text-stone-700">
                   Password
                 </label>
-                <button
+                {/* <button
                   type="button"
                   className="text-xs text-stone-500 hover:text-stone-800 transition-colors font-medium"
                 >
                   Forgot password?
-                </button>
+                </button> */}
               </div>
               <div
                 className={`relative rounded-xl border transition-all duration-150 ${focused === "password" ? "border-stone-400 shadow-sm ring-2 ring-stone-900/5" : "border-stone-200"} bg-white`}
@@ -293,16 +291,16 @@ export default function Login() {
               )}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
+{/* 
+          Divider */}
+          {/* <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-stone-200" />
             <span className="text-stone-400 text-xs font-medium">or</span>
             <div className="flex-1 h-px bg-stone-200" />
-          </div>
+          </div> */}
 
           {/* SSO */}
-          <button
+          {/* <button
             type="button"
             className="w-full border border-stone-200 bg-white hover:bg-stone-50 active:bg-stone-100 text-stone-700 font-medium text-sm py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-2.5 shadow-sm"
           >
@@ -325,7 +323,7 @@ export default function Login() {
               />
             </svg>
             Continue with Google
-          </button>
+          </button> */}
 
           {/* Sign up link */}
           <p className="text-center text-sm text-stone-500 mt-6">
@@ -340,7 +338,7 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div className="mt-12 flex items-center gap-5">
+        {/* <div className="mt-12 flex items-center gap-5">
           {["Privacy", "Terms", "Security"].map((link) => (
             <button
               key={link}
@@ -350,7 +348,7 @@ export default function Login() {
               {link}
             </button>
           ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );
