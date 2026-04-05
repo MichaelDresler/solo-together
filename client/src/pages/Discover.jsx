@@ -4,7 +4,7 @@ import EventList from "../components/EventList";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 
 export default function Discover() {
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
   const [err, setErr] = useState("");
   const [events, setEvents] = useState([]);
 
@@ -23,7 +23,7 @@ export default function Discover() {
 
         const params = new URLSearchParams();
 
-        if (searchQuery.trim()) {
+        if (user && searchQuery.trim()) {
           params.set("q", searchQuery.trim());
         }
 
@@ -69,12 +69,12 @@ export default function Discover() {
     return () => {
       isCancelled = true;
     };
-  }, [token, searchQuery, filterByCategory, filterByCity, filterBySource]);
+  }, [token, user, searchQuery, filterByCategory, filterByCity, filterBySource]);
 
   async function loadEvents() {
     const params = new URLSearchParams();
 
-    if (searchQuery.trim()) {
+    if (user && searchQuery.trim()) {
       params.set("q", searchQuery.trim());
     }
 
@@ -150,20 +150,24 @@ export default function Discover() {
 
       <h1 className="text-3xl font-bold capitalize">Discover new events</h1>
       <h2 className="pb-8 font-medium text-black/60">
-        Browse SoloTogether events by keyword, category, city, and source without leaving the page.
+        {user
+          ? "Browse SoloTogether events by keyword, category, city, and source without leaving the page."
+          : "Browse SoloTogether events by category, city, and source without leaving the page."}
       </h2>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div className="flex flex-col xl:col-span-2">
-          <label htmlFor="search">Search</label>
-          <input
-            id="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            className="border rounded px-3 py-2"
-            placeholder="Search by title, description, city, or category"
-          />
-        </div>
+      <div className={`mb-8 grid gap-4 md:grid-cols-2 ${user ? "xl:grid-cols-5" : "xl:grid-cols-3"}`}>
+        {user ? (
+          <div className="flex flex-col xl:col-span-2">
+            <label htmlFor="search">Search</label>
+            <input
+              id="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="border rounded px-3 py-2"
+              placeholder="Search by title, description, city, or category"
+            />
+          </div>
+        ) : null}
 
         <div className="flex flex-col">
           <label htmlFor="sort">Sort</label>

@@ -21,20 +21,10 @@ import AdminEvents from "./pages/AdminEvents";
 
 
 const router = createBrowserRouter([
-  // 🔓 Public routes (NO RootLayout)
-  {
-    path: "/",
-    children: [
-      { index: true, element: <Home /> },
-      { path: "login", element: <Login /> },
-      { path: "register", element: <Register /> },
-    ],
-  },
-
-  // 🔐 App routes (WITH RootLayout)
   {
     element: <RootLayout />,
     children: [
+      { index: true, element: <Home /> },
       {
         path: "dashboard",
         element: (
@@ -61,7 +51,11 @@ const router = createBrowserRouter([
       },
       {
         path: "search",
-        element: <SearchResults />,
+        element: (
+          <ProtectedRoute>
+            <SearchResults />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "create-event",
@@ -104,6 +98,14 @@ const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
   },
 ]);
 createRoot(document.getElementById("root")).render(
