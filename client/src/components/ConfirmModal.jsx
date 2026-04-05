@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function ConfirmModal({
   isOpen,
@@ -41,7 +42,7 @@ export default function ConfirmModal({
       ? "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
       : "bg-stone-900 text-white hover:bg-stone-700 disabled:bg-stone-300";
 
-  return (
+  const modalContent = (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center px-4 py-8 transition-opacity duration-200 ${
         isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
@@ -97,4 +98,10 @@ export default function ConfirmModal({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(modalContent, document.body);
 }

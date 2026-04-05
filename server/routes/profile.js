@@ -12,6 +12,14 @@ import { serializeUserProfile } from "../utils/profile.js";
 const router = express.Router();
 const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024;
 
+function normalizeUsername(value) {
+  return value?.trim().toLowerCase() || "";
+}
+
+function isValidUsername(value) {
+  return /^[a-z0-9._]+$/.test(value);
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -165,12 +173,20 @@ router.patch("/me", auth, async (req, res) => {
     const firstName = req.body.firstName?.trim();
     const lastName = req.body.lastName?.trim();
     const email = req.body.email?.trim().toLowerCase() || "";
+    const username = normalizeUsername(req.body.username);
     const hasAvatarUrl = typeof req.body.avatarUrl === "string";
     const avatarUrl = hasAvatarUrl ? req.body.avatarUrl.trim() : null;
 
-    if (!firstName || !lastName || !email) {
+    if (!firstName || !lastName || !email || !username) {
       return res.status(400).json({
-        error: "First name, last name, and email are required.",
+        error: "First name, last name, username, and email are required.",
+      });
+    }
+
+    if (!isValidUsername(username)) {
+      return res.status(400).json({
+        error:
+          "Username can only include letters, numbers, periods, and underscores.",
       });
     }
 
@@ -189,6 +205,15 @@ router.patch("/me", auth, async (req, res) => {
       return res.status(409).json({ error: "Email is already in use." });
     }
 
+    const existingUsername = await User.findOne({
+      username,
+      _id: { $ne: req.userId },
+    });
+
+    if (existingUsername) {
+      return res.status(409).json({ error: "Username is already in use." });
+    }
+
     const previousAvatarPublicId = user.avatarPublicId;
     const shouldClearManagedAvatar =
       hasAvatarUrl &&
@@ -198,6 +223,7 @@ router.patch("/me", auth, async (req, res) => {
     user.firstName = firstName;
     user.lastName = lastName;
     user.email = email;
+    user.username = username;
 
     if (hasAvatarUrl) {
       user.avatarUrl = avatarUrl;

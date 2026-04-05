@@ -573,6 +573,7 @@ async function requestJson(path, options = {}) {
 async function ensureUser(user) {
   const registerPayload = {
     email: `${user.username}@example.com`,
+    username: user.username,
     password: DEMO_PASSWORD,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -628,6 +629,7 @@ async function syncUserProfile(user, token) {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
+      username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
       email: `${user.username}@example.com`,

@@ -10,32 +10,12 @@ function normalizeEmail(value) {
   return value?.trim().toLowerCase() || "";
 }
 
-function generateBaseUsername({ firstName, lastName, email }) {
-  const joinedName = [firstName, lastName]
-    .map((value) => value?.trim().toLowerCase())
-    .filter(Boolean)
-    .join(".");
-
-  if (joinedName) {
-    return joinedName.replace(/[^a-z0-9.]+/g, "");
-  }
-
-  return normalizeEmail(email)
-    .split("@")[0]
-    .replace(/[^a-z0-9.]+/g, "");
+function normalizeUsername(value) {
+  return value?.trim().toLowerCase() || "";
 }
 
-async function buildUniqueUsername(input) {
-  const baseUsername = generateBaseUsername(input) || "member";
-  let candidate = baseUsername;
-  let suffix = 1;
-
-  while (await User.exists({ username: candidate })) {
-    suffix += 1;
-    candidate = `${baseUsername}${suffix}`;
-  }
-
-  return candidate;
+function isValidUsername(value) {
+  return /^[a-z0-9._]+$/.test(value);
 }
 
 router.post("/register", async (req, res) => {
@@ -44,11 +24,19 @@ router.post("/register", async (req, res) => {
     const firstName = req.body.firstName?.trim() || "";
     const lastName = req.body.lastName?.trim() || "";
     const email = normalizeEmail(req.body.email);
+    const username = normalizeUsername(req.body.username);
 
-    if (!email || !password || !firstName || !lastName) {
+    if (!email || !password || !firstName || !lastName || !username) {
       return res
         .status(400)
         .json({ error: "please fill out the missing field" });
+    }
+
+    if (!isValidUsername(username)) {
+      return res.status(400).json({
+        error:
+          "username can only include letters, numbers, periods, and underscores",
+      });
     }
 
     if (password.length < 8) {
@@ -62,7 +50,11 @@ router.post("/register", async (req, res) => {
       return res.status(409).json({ error: "email already in use" });
     }
 
-    const username = await buildUniqueUsername({ firstName, lastName, email });
+    const usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      return res.status(409).json({ error: "username already in use" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const hasExistingUsers = (await User.estimatedDocumentCount()) > 0;
     const newUser = await User.create({

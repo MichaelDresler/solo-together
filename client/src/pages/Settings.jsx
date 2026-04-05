@@ -12,6 +12,7 @@ export default function Settings() {
   const [formValues, setFormValues] = useState({
     firstName: "",
     lastName: "",
+    username: "",
     email: "",
   });
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function Settings() {
         setFormValues({
           firstName: data.user.firstName || "",
           lastName: data.user.lastName || "",
+          username: data.user.username || "",
           email: data.user.email || "",
         });
       } catch (fetchError) {
@@ -297,6 +299,19 @@ export default function Settings() {
                 onChange={handleInputChange}
                 className="w-full rounded-lg bg-black/5 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:bg-black/[0.07]"
                 placeholder="you@example.com"
+              />
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-stone-700">
+                Username
+              </span>
+              <input
+                name="username"
+                value={formValues.username}
+                onChange={handleInputChange}
+                className="w-full rounded-lg bg-black/5 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:bg-black/[0.07]"
+                placeholder="jamie.kim"
               />
             </label>
 
