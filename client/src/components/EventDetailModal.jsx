@@ -267,7 +267,7 @@ export default function EventDetailModal({
                 </h2>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {event.source ? (
-                    <span className="rounded-full bg-stone-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-stone-500">
+                    <span className="rounded-full bg-stone-100 px-3 py-1 text-[14px] font-semibold capitalize text-stone-500">
                       {event.source}
                     </span>
                   ) : null}
@@ -332,7 +332,7 @@ export default function EventDetailModal({
                             {locationParts.secondaryText}
                           </p>
                         ) : null}
-                        {event.classification ? (
+                        {event.source === "ticketmaster" && event.classification ? (
                           <p className="text-sm font-medium text-stone-500">
                             {event.classification}
                           </p>

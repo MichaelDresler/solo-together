@@ -10,11 +10,11 @@ const eventLocationSchema = new Schema(
     },
     lat: {
       type: Number,
-      required: true,
+      default: undefined,
     },
     lng: {
       type: Number,
-      required: true,
+      default: undefined,
     },
   },
   { _id: false }

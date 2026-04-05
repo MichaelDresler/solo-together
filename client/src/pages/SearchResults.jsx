@@ -4,6 +4,11 @@ import TicketmasterResults from "../components/TicketmasterResults";
 import useTicketmasterEventSearch from "../components/useTicketmasterEventSearch";
 import { AuthContext } from "../context/auth-context";
 
+const filterLabelClass =
+  "text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500";
+const filterControlClass =
+  "mt-1.5 h-10 min-w-[11rem] rounded-2xl border border-stone-200 bg-stone-50 px-3 text-sm text-stone-900 outline-none transition focus:border-stone-300 focus:bg-white";
+
 export default function SearchResults() {
   const { token } = useContext(AuthContext);
   const [searchParams] = useSearchParams();
@@ -85,16 +90,16 @@ export default function SearchResults() {
       {error ? <p className="mb-6 text-sm text-red-600">{error}</p> : null}
 
       {hasQuery ? (
-        <div className="mb-8 flex flex-wrap gap-4">
+        <div className="mb-8 flex flex-wrap gap-3 rounded-[1.75rem] border border-stone-200 bg-white/90 p-4 shadow-sm">
           <div className="flex flex-col">
-            <label htmlFor="sort-results" className="text-sm font-medium text-stone-600">
+            <label htmlFor="sort-results" className={filterLabelClass}>
               Sort
             </label>
             <select
               id="sort-results"
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
-              className="mt-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-stone-400"
+              className={filterControlClass}
             >
               <option value="date-asc">Date: Soonest first</option>
               <option value="date-desc">Date: Latest first</option>
@@ -104,14 +109,14 @@ export default function SearchResults() {
           </div>
 
           <div className="flex flex-col">
-            <label htmlFor="category-results" className="text-sm font-medium text-stone-600">
-              Filter by category
+            <label htmlFor="category-results" className={filterLabelClass}>
+              Category
             </label>
             <select
               id="category-results"
               value={filterByCategory}
               onChange={(event) => setFilterByCategory(event.target.value)}
-              className="mt-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-stone-400"
+              className={filterControlClass}
             >
               <option value="all">All categories</option>
               {categories.map((category) => (
@@ -123,14 +128,14 @@ export default function SearchResults() {
           </div>
 
           <div className="flex flex-col">
-            <label htmlFor="source-results" className="text-sm font-medium text-stone-600">
-              Filter by source
+            <label htmlFor="source-results" className={filterLabelClass}>
+              Source
             </label>
             <select
               id="source-results"
               value={filterBySource}
               onChange={(event) => setFilterBySource(event.target.value)}
-              className="mt-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-stone-400"
+              className={filterControlClass}
             >
               <option value="all">All sources</option>
               <option value="internal">SoloTogether</option>

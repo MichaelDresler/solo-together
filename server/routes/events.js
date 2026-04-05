@@ -66,8 +66,6 @@ function normalizeEventPayload(payload) {
     stateOrProvince: payload.stateOrProvince?.trim() || "",
     postalCode: payload.postalCode?.trim() || "",
     country: payload.country?.trim() || "",
-    locationName: payload.locationName?.trim() || "",
-    classification: payload.classification?.trim() || "",
     imageUrl: payload.imageUrl?.trim() || "",
     externalUrl: payload.externalUrl?.trim() || "",
   };
@@ -254,6 +252,16 @@ function hasValidEventLocation(location) {
   );
 }
 
+function buildEventLocation(address, geocodedLocation) {
+  if (geocodedLocation) {
+    return geocodedLocation;
+  }
+
+  return {
+    address: address.trim(),
+  };
+}
+
 function getEventOwnerId(event) {
   return event.createdBy?.toString() || event.userId?.toString() || null;
 }
@@ -432,27 +440,27 @@ router.post("/", auth, handleEventImageUpload, async (req, res) => {
       normalizedEvent.imageUrl = uploadedEventImage.imageUrl;
     }
 
-    let geocodedLocation;
+    let geocodedLocation = null;
 
     try {
       geocodedLocation = await geocodeEventAddress(locationAddress);
     } catch (error) {
-      return res.status(400).json({
-        error: "Unable to geocode the provided address.",
+      console.log("continuing without event coordinates", {
+        address: locationAddress,
+        error: error.message,
       });
     }
 
     if (!geocodedLocation) {
-      console.log("event geocoding returned no result", { address: locationAddress });
-      return res.status(400).json({
-        error: "Unable to find coordinates for the provided address.",
+      console.log("event geocoding returned no result", {
+        address: locationAddress,
       });
     }
 
     const newEvent = await Event.create({
       source: "internal",
       ...normalizedEvent,
-      location: geocodedLocation,
+      location: buildEventLocation(locationAddress, geocodedLocation),
       imagePublicId: uploadedEventImage?.imagePublicId || "",
       createdBy: req.userId,
       userId: req.userId,
@@ -538,24 +546,24 @@ router.patch("/:id", auth, handleEventImageUpload, async (req, res) => {
       const needsLocationRepair = !hasValidEventLocation(event.location);
 
       if (locationAddress !== currentLocationAddress || needsLocationRepair) {
-        let geocodedLocation;
+        let geocodedLocation = null;
 
         try {
           geocodedLocation = await geocodeEventAddress(locationAddress);
         } catch (error) {
-          return res.status(400).json({
-            error: "Unable to geocode the provided address.",
+          console.log("continuing without updated event coordinates", {
+            address: locationAddress,
+            error: error.message,
           });
         }
 
         if (!geocodedLocation) {
-          console.log("event geocoding returned no result", { address: locationAddress });
-          return res.status(400).json({
-            error: "Unable to find coordinates for the provided address.",
+          console.log("event geocoding returned no result", {
+            address: locationAddress,
           });
         }
 
-        normalizedEvent.location = geocodedLocation;
+        normalizedEvent.location = buildEventLocation(locationAddress, geocodedLocation);
       }
     }
 

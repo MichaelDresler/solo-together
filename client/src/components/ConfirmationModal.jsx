@@ -33,7 +33,7 @@ export default function ConfirmationModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="inline-flex items-center justify-center rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:bg-stone-400"
+            className="inline-flex items-center squircle justify-center rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:bg-stone-400"
           >
             {loading ? "Leaving..." : confirmLabel}
           </button>

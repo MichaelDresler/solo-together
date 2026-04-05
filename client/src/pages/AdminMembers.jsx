@@ -1,4 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from "react";
+import ConfirmModal from "../components/ConfirmModal";
 import { AuthContext } from "../context/auth-context";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 import { canAssignAdmins, canManageMembers } from "../lib/permissions";
@@ -9,6 +10,7 @@ export function AdminMembersSection() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeAction, setActiveAction] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -106,15 +108,12 @@ export function AdminMembersSection() {
     }
   }
 
-  async function deleteMember(memberId, username) {
-    const confirmed = window.confirm(
-      `Delete @${username}? Their account and internal events will be removed.`
-    );
-
-    if (!confirmed) {
+  async function deleteMember() {
+    if (!pendingDelete) {
       return;
     }
 
+    const { memberId } = pendingDelete;
     const actionId = `delete:${memberId}`;
     setActiveAction(actionId);
     setError("");
@@ -133,6 +132,7 @@ export function AdminMembersSection() {
       setMembers((currentMembers) =>
         currentMembers.filter((member) => member._id !== memberId)
       );
+      setPendingDelete(null);
     } catch (deleteError) {
       setError(deleteError.message || "Failed to delete member");
     } finally {
@@ -227,7 +227,12 @@ export function AdminMembersSection() {
                         <button
                           type="button"
                           disabled={isSelf || isSuper || activeAction === `delete:${member._id}`}
-                          onClick={() => deleteMember(member._id, member.username)}
+                          onClick={() =>
+                            setPendingDelete({
+                              memberId: member._id,
+                              username: member.username,
+                            })
+                          }
                           className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {activeAction === `delete:${member._id}` ? "Deleting..." : "Delete"}
@@ -241,6 +246,20 @@ export function AdminMembersSection() {
           </table>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(pendingDelete)}
+        title="Delete member?"
+        message={`Delete @${pendingDelete?.username || "member"}? Their account and internal events will be removed.`}
+        confirmLabel="Delete"
+        busy={Boolean(pendingDelete && activeAction === `delete:${pendingDelete.memberId}`)}
+        onConfirm={deleteMember}
+        onCancel={() => {
+          if (!activeAction.startsWith("delete:")) {
+            setPendingDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

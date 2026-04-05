@@ -3,6 +3,11 @@ import { AuthContext } from "../context/auth-context";
 import EventList from "../components/EventList";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 
+const filterLabelClass =
+  "text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500";
+const filterControlClass =
+  "mt-1.5 h-10 w-full rounded-2xl border border-stone-200 bg-stone-50 px-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-300 focus:bg-white";
+
 export default function Discover() {
   const { token, user } = useContext(AuthContext);
   const [err, setErr] = useState("");
@@ -155,27 +160,33 @@ export default function Discover() {
           : "Browse SoloTogether events by category, city, and source without leaving the page."}
       </h2>
 
-      <div className={`mb-8 grid gap-4 md:grid-cols-2 ${user ? "xl:grid-cols-5" : "xl:grid-cols-3"}`}>
+      <div
+        className={`mb-8 grid gap-3  md:grid-cols-2 ${user ? "xl:grid-cols-5" : "xl:grid-cols-3"}`}
+      >
         {user ? (
           <div className="flex flex-col xl:col-span-2">
-            <label htmlFor="search">Search</label>
+            <label htmlFor="search" className={filterLabelClass}>
+              Search
+            </label>
             <input
               id="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="border rounded px-3 py-2"
+              className={filterControlClass}
               placeholder="Search by title, description, city, or category"
             />
           </div>
         ) : null}
 
         <div className="flex flex-col">
-          <label htmlFor="sort">Sort</label>
+          <label htmlFor="sort" className={filterLabelClass}>
+            Sort
+          </label>
           <select
             id="sort"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="border rounded px-3 py-2"
+            className={filterControlClass}
           >
             <option value="date-asc">Date: Soonest first</option>
             <option value="date-desc">Date: Latest first</option>
@@ -184,30 +195,16 @@ export default function Discover() {
           </select>
         </div>
 
-        <div className="flex flex-col">
-          <label htmlFor="category">Filter by category</label>
-          <select
-            id="category"
-            value={filterByCategory}
-            onChange={(event) => setFilterByCategory(event.target.value)}
-            className="border rounded px-3 py-2"
-          >
-            <option value="all">All categories</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
 
         <div className="flex flex-col">
-          <label htmlFor="city">Filter by city</label>
+          <label htmlFor="city" className={filterLabelClass}>
+            City
+          </label>
           <select
             id="city"
             value={filterByCity}
             onChange={(event) => setFilterByCity(event.target.value)}
-            className="border rounded px-3 py-2"
+            className={filterControlClass}
           >
             <option value="all">All cities</option>
             {cities.map((city) => (
@@ -219,12 +216,14 @@ export default function Discover() {
         </div>
 
         <div className="flex flex-col">
-          <label htmlFor="source">Filter by source</label>
+          <label htmlFor="source" className={filterLabelClass}>
+            Source
+          </label>
           <select
             id="source"
             value={filterBySource}
             onChange={(event) => setFilterBySource(event.target.value)}
-            className="border rounded px-3 py-2"
+            className={filterControlClass}
           >
             <option value="all">All sources</option>
             <option value="internal">SoloTogether</option>

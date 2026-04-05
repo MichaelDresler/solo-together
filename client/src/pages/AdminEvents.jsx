@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import ConfirmModal from "../components/ConfirmModal";
 import { AuthContext } from "../context/auth-context";
 import { createAuthHeaders, getApiUrl } from "../lib/api";
 import { canManageMembers } from "../lib/permissions";
@@ -10,6 +11,7 @@ export function AdminEventsSection() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [deletingEventId, setDeletingEventId] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
@@ -42,13 +44,12 @@ export function AdminEventsSection() {
     loadEvents();
   }, [loadEvents, user]);
 
-  async function deleteEvent(eventId, title) {
-    const confirmed = window.confirm(`Delete "${title}"?`);
-
-    if (!confirmed) {
+  async function deleteEvent() {
+    if (!pendingDelete) {
       return;
     }
 
+    const { eventId } = pendingDelete;
     setDeletingEventId(eventId);
     setError("");
 
@@ -66,6 +67,7 @@ export function AdminEventsSection() {
       setEvents((currentEvents) =>
         currentEvents.filter((event) => event._id !== eventId),
       );
+      setPendingDelete(null);
     } catch (deleteError) {
       setError(deleteError.message || "Failed to delete event");
     } finally {
@@ -143,7 +145,12 @@ export function AdminEventsSection() {
                       <button
                         type="button"
                         disabled={deletingEventId === event._id}
-                        onClick={() => deleteEvent(event._id, event.title)}
+                        onClick={() =>
+                          setPendingDelete({
+                            eventId: event._id,
+                            title: event.title || "this event",
+                          })
+                        }
                         className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {deletingEventId === event._id ? "Deleting..." : "Delete"}
@@ -156,6 +163,20 @@ export function AdminEventsSection() {
           </table>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(pendingDelete)}
+        title="Delete event?"
+        message={`Delete "${pendingDelete?.title || "this event"}"?`}
+        confirmLabel="Delete"
+        busy={Boolean(pendingDelete && deletingEventId === pendingDelete.eventId)}
+        onConfirm={deleteEvent}
+        onCancel={() => {
+          if (!deletingEventId) {
+            setPendingDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

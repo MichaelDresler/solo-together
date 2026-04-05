@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../context/auth-context";
+import ConfirmModal from "../components/ConfirmModal";
 import GoingSoloButton from "../components/GoingSoloButton";
 import SoloAttendeeSummary from "../components/SoloAttendeeSummary";
 import UserAvatar from "../components/UserAvatar";
@@ -56,6 +57,8 @@ export default function EventDetail() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(location.state?.toast || "");
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [attendeeState, setAttendeeState] = useState({
     eventKey: null,
     attendees: [],
@@ -97,6 +100,33 @@ export default function EventDetail() {
 
     loadEvent();
   }, [id, token]);
+
+  async function handleDeleteEvent() {
+    if (!event?._id) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const res = await fetch(getApiUrl(`/api/events/${event._id}`), {
+        method: "DELETE",
+        headers: createAuthHeaders(token),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete event");
+      }
+
+      setIsDeleteConfirmOpen(false);
+      navigate("/discover");
+    } catch (deleteError) {
+      setToast(deleteError.message || "Failed to delete event");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -147,8 +177,8 @@ export default function EventDetail() {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-[1.75rem]  ">
-          <div className="flex items-center justify-between gap-3 border-b border-stone-200 bg-stone-100/95 px-4 py-3 backdrop-blur-sm sm:px-5">
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-3 px-1">
             <div className="flex min-w-0 items-center gap-2">
               {event.externalUrl ? (
                 <a
@@ -162,15 +192,20 @@ export default function EventDetail() {
               ) : null}
             </div>
 
-            <EventSettingsMenu event={event} onDeleted={() => navigate("/discover")} />
+            <EventSettingsMenu
+              event={event}
+              onRequestDelete={() => setIsDeleteConfirmOpen(true)}
+              deleteBusy={isDeleting}
+              hideInternalConfirm
+            />
           </div>
 
-          <div className="">
+          <div className="overflow-hidden ">
             {event.imageUrl ? (
               <img
                 src={event.imageUrl}
                 alt={event.title || "Event"}
-                className="h-64 w-full object-cover md:h-80"
+                className="h-64 w-full object-cover md:h-80 rounded-md"
               />
             ) : (
               <div className="flex h-64 w-full items-center justify-center bg-stone-100 text-sm font-medium text-stone-500 md:h-80">
@@ -260,7 +295,7 @@ export default function EventDetail() {
                               {locationParts.secondaryText}
                             </p>
                           ) : null}
-                          {event.classification ? (
+                          {event.source === "ticketmaster" && event.classification ? (
                             <p className="text-sm font-medium text-stone-500">
                               {event.classification}
                             </p>
@@ -332,6 +367,20 @@ export default function EventDetail() {
             </div>
           </div>
         </div>
+
+        <ConfirmModal
+          isOpen={isDeleteConfirmOpen}
+          title="Delete event?"
+          message={`Delete "${event.title || "this event"}"? This cannot be undone.`}
+          confirmLabel="Delete event"
+          busy={isDeleting}
+          onConfirm={handleDeleteEvent}
+          onCancel={() => {
+            if (!isDeleting) {
+              setIsDeleteConfirmOpen(false);
+            }
+          }}
+        />
       </div>
     </main>
   );
