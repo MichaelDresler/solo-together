@@ -80,7 +80,7 @@ export default function FavoriteButton({
       type="button"
       disabled={loading}
       onClick={handleToggleFavorite}
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${
+      className={`inline-flex items-center gap-2 rounded-full border px-2 py-1 text-xs font-medium transition ${
         event.isFavorited
           ? "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
           : "border-stone-300 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50"

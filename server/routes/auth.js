@@ -93,14 +93,17 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const email = normalizeEmail(req.body.email);
-    const identifier = email || req.body.username?.trim().toLowerCase() || "";
+    const identifier =
+      req.body.identifier?.trim().toLowerCase() ||
+      normalizeEmail(req.body.email) ||
+      req.body.username?.trim().toLowerCase() ||
+      "";
     const { password } = req.body;
 
     if (!identifier || !password) {
       return res
         .status(400)
-        .json({ error: "please provide an email and password" });
+        .json({ error: "please provide an email or username and password" });
     }
 
     const user = await User.findOne({

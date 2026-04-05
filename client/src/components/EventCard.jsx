@@ -36,18 +36,16 @@ export default function EventCard({
               <p className="text-sm font-medium text-stone-500">
                 {formatEventStart(event.startDate)}
               </p>
-              {event.source ? (
+              {/* {event.source ? (
                 <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
                   {event.source}
                 </span>
-              ) : null}
+              ) : null} */}
             </div>
             <h3 className="line-clamp-2 text-[1.25rem] font-semibold tracking-tight text-stone-950">
               {event.title || "Untitled event"}
             </h3>
-            <p className="line-clamp-2 text-sm text-stone-600">
-              {event.description || "No description available yet."}
-            </p>
+
             <p className="line-clamp-1 text-sm text-stone-500">
               {formatEventLocation(event)}
             </p>
@@ -60,16 +58,13 @@ export default function EventCard({
             token={token}
             importPayload={importPayload}
             onChange={onEventChange}
-            className="absolute right-4 top-4 shadow-sm"
+            className="absolute right-2 top-2 shadow-sm"
           />
         ) : null}
       </div>
 
       <div className="border-t border-stone-200 px-5 py-4">
-        <div className="mb-3 flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
-          <span>{event.classification || "General"}</span>
-          {event.city ? <span>{event.city}</span> : null}
-        </div>
+
         <SoloAttendeeSummary
           attendees={event.soloPreviewUsers || []}
           count={event.soloAttendeeCount || 0}

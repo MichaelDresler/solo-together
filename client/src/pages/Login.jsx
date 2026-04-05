@@ -20,7 +20,7 @@ export default function Login() {
     setErr("");
     const formData = new FormData(e.target);
     const loginInfo = {
-      email: formData.get("email"),
+      identifier: formData.get("identifier"),
       password: formData.get("password"),
     };
     try {
@@ -129,7 +129,7 @@ export default function Login() {
             {/* Username field */}
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                Email
+                Email or Username
               </label>
               <div
                 className={`relative rounded-xl border transition-all duration-150 ${focused === "username" ? "border-stone-400 shadow-sm ring-2 ring-stone-900/5" : "border-stone-200"} bg-white`}
@@ -150,10 +150,10 @@ export default function Login() {
                   </svg>
                 </div>
                 <input
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@company.com"
+                  name="identifier"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="you@company.com or jamiekim92"
                   onFocus={() => setFocused("username")}
                   onBlur={() => setFocused(null)}
                   className="w-full pl-10 pr-4 py-3 bg-transparent text-stone-900 placeholder-stone-400 text-sm rounded-xl focus:outline-none"

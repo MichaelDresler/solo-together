@@ -119,7 +119,7 @@ export default function GlobalSearchModal({ isOpen, onClose, initialQuery = "" }
           </div>
 
           <div className="flex items-center justify-between bg-stone-50 px-5 py-3 text-sm text-stone-500">
-            <p>Find Ticketmaster events across Canada.</p>
+            <p>Search and find events across ticketmaster and our database</p>
             <p className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-medium text-stone-500">
               ESC to close
             </p>

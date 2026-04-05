@@ -73,9 +73,7 @@ export default function SearchResults() {
   return (
     <main className="mx-auto w-full max-w-[80rem] px-6">
       <header className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#CF5812]">
-          Unified Search
-        </p>
+
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-950">
           {hasQuery ? `Results for “${query}”` : "Search events"}
         </h1>

@@ -85,7 +85,7 @@ export default function Nav({ onOpenSearch }) {
 
         <div className="flex w-full items-center justify-end">
           <Link
-            className="rounded-full bg-[#CF5812] px-8 py-2 font-semibold text-white duration-200 hover:bg-[#b35119]"
+            className="rounded-full squircle bg-[#CF5812] px-5 text-sm py-1.5 font-semibold text-white duration-200 hover:bg-[#b35119]"
             to="/login"
           >
             login
